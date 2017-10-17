@@ -30,6 +30,7 @@ public class PhotonPositionDriver extends GeneralTupleDriverPhotonPosition {
         	tupleMap.put("Px/D",p.getPX());
         	tupleMap.put("Py/D",p.getPY());
         	tupleMap.put("Pz/D",p.getPZ());
+        	tupleMap.put("genStatus/I", (double) p.getGeneratorStatus());
         }
     }
     
@@ -37,7 +38,7 @@ public class PhotonPositionDriver extends GeneralTupleDriverPhotonPosition {
     	
         String[] newVars = new String[]{"run/I", "event/I",
         		"energy/D","startX/D","startY/D","startZ/D","endX/D","endY/D","endZ/D",
-        		"Px/D","Py/D","Pz/D","parentID/I"};
+        		"Px/D","Py/D","Pz/D","parentID/I","genStatus/I"};
         tupleVariables.addAll(Arrays.asList(newVars));
     }
 }
