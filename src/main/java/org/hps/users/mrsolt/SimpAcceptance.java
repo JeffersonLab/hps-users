@@ -1,5 +1,5 @@
 /**
- * Analysis driver to calculate hit efficiencies in the SVT
+ * Analysis driver to calculate acceptances of Simps
  */
 /**
  * @author mrsolt
@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import hep.aida.IHistogram1D;
+import hep.aida.IHistogram2D;
 import hep.aida.ITree;
 import hep.physics.vec.Hep3Vector;
 
@@ -65,6 +66,15 @@ public class SimpAcceptance extends Driver {
     IHistogram1D findableDecaysWithDaughtersWithRecoilOppoVolWithEcal;
     IHistogram1D findableDecaysWithDaughtersWithRecoilTotWithEcal;
     
+    IHistogram2D ecalHitPosEle;
+    IHistogram2D ecalHitPosPos;
+    IHistogram2D ecalHitPosEleRec;
+    
+    IHistogram2D ecalHitPosEle_PosTop;
+    IHistogram2D ecalHitPosEle_PosBot;
+    IHistogram2D ecalHitPosPos_EleTop;
+    IHistogram2D ecalHitPosPos_EleBot;
+    
     IHistogram1D NumberofEvents;
 
     
@@ -83,6 +93,16 @@ public class SimpAcceptance extends Driver {
         findableDecaysWithDaughtersWithRecoilSameVolWithEcal = aida.histogram1D("findableDecaysWithDaughtersWithRecoilSameVolWithEcal", 1, 0, 1);
         findableDecaysWithDaughtersWithRecoilOppoVolWithEcal = aida.histogram1D("findableDecaysWithDaughtersWithRecoilOppoVolWithEcal", 1, 0, 1);
         findableDecaysWithDaughtersWithRecoilTotWithEcal = aida.histogram1D("findableDecaysWithDaughtersWithRecoilTotWithEcal", 1, 0, 1);
+        
+        ecalHitPosEle = aida.histogram2D("Ecal Hit Position Electron", 50, -400, 400, 50, -100, 100);
+        ecalHitPosPos = aida.histogram2D("Ecal Hit Position Positron", 50, -400, 400, 50, -100, 100);
+        ecalHitPosEleRec = aida.histogram2D("Ecal Hit Position Recoil Electron", 50, -400, 400, 50, -100, 100);
+        
+        ecalHitPosEle_PosTop = aida.histogram2D("Ecal Hit Position Electron (Positron Top)", 50, -400, 400, 50, -100, 100);
+        ecalHitPosEle_PosBot = aida.histogram2D("Ecal Hit Position Electron (Positron Bot)", 50, -400, 400, 50, -100, 100);
+        ecalHitPosPos_EleTop = aida.histogram2D("Ecal Hit Position Positron (Electron Top)", 50, -400, 400, 50, -100, 100);
+        ecalHitPosPos_EleBot = aida.histogram2D("Ecal Hit Position Positron (Electron Bot)", 50, -400, 400, 50, -100, 100);
+
         
         NumberofEvents = aida.histogram1D("Number of Events", 1, 0, 1);
         
@@ -112,7 +132,9 @@ public class SimpAcceptance extends Driver {
             if (hitMap.get(p) == null) {
                 hitMap.put(p, new Pair<List<SimTrackerHit>, List<SimCalorimeterHit>>(new ArrayList<SimTrackerHit>(), new ArrayList<SimCalorimeterHit>()));
             }
-            hitMap.get(p).getSecond().addAll(hits);
+            if(!hitMap.get(p).getSecond().contains(hits)){
+                hitMap.get(p).getSecond().addAll(hits);
+            }
         }
     	return hitMap;
     }
@@ -126,13 +148,24 @@ public class SimpAcceptance extends Driver {
     }
     
     private boolean IsVDaughter(MCParticle p){
-    	return true;
-    	//return p.getParents() == null;
+    	List<MCParticle> parents = p.getParents();
+    	if(parents == null) return false;
+    	if(parents.size() != 2) return false;
+    	boolean V0Parent = false;
+    	boolean apParent = false;
+    	for(MCParticle parent:parents){
+    		if (parent.getPDGID() == 622) apParent = true;
+    		if (parent.getPDGID() == 625) V0Parent = true;
+    	}
+    	return apParent && V0Parent;
     }
     
     private boolean IsRecoil(MCParticle p){
-    	return false;
-    	//return p.getParents() == null && p.getOriginZ() < 0.0001;
+    	List<MCParticle> parents = p.getParents();
+    	if(parents == null) return false;
+    	if(parents.size() != 1) return false;
+    	boolean apParent = parents.get(0).getPDGID() == 622;
+    	return apParent && p.getPDGID() == 11;
     }
     
     private boolean IsTrackFindable(List<SimTrackerHit> trackerhits){
@@ -160,72 +193,121 @@ public class SimpAcceptance extends Driver {
     
     @Override
     public void process(EventHeader event){
-		//aida.tree().cd("/");
-		
 		events++;
         
         List<SimTrackerHit> trackerHits = event.get(SimTrackerHit.class, "TrackerHits");
         List<SimCalorimeterHit> calHits = event.get(SimCalorimeterHit.class, "EcalHits");
         
+        //Build the tracker hit and ecal hit maps to MCParticles
         Map<MCParticle, List<SimTrackerHit>> trackerHitMap = MCFullDetectorTruth.BuildTrackerHitMap(trackerHits);
         Map<MCParticle, List<SimCalorimeterHit>> calHitMap = MCFullDetectorTruth.BuildCalHitMap(calHits);
         Map<MCParticle, Pair<List<SimTrackerHit>, List<SimCalorimeterHit>>> hitMap = constructHitMap(trackerHitMap, calHitMap);
-        Map<String,boolean[]> findable = new HashMap<>();
-        boolean[] dummy = {false,false,false};
         
-        findable.put("ele", dummy);
-        findable.put("pos", dummy);
-        findable.put("eleRec", dummy);       
-        
+        boolean[] findableEle = {false,false,false};
+        boolean[] findablePos = {false,false,false};
+        boolean[] findableEleRec = {false,false,false};
+        Hep3Vector posEle = null;
+        Hep3Vector posPos = null;
+
         for (Entry<MCParticle, Pair<List<SimTrackerHit>, List<SimCalorimeterHit>>> entry : hitMap.entrySet()) {
-        	//System.out.println("Pass 1");
-            
             MCParticle p = entry.getKey();
             boolean isVDaughterPos = IsVDaughterPos(p);
             boolean isVDaughterEle = IsVDaughterEle(p);
             boolean isRecoil = IsRecoil(p);
+            
+            //Is particle one of the particles of interest?
             if(!isVDaughterEle && !isVDaughterPos && !isRecoil) continue;
             List<SimTrackerHit> trackerhits = entry.getValue().getFirst();
             List<SimCalorimeterHit> ecalhits = entry.getValue().getSecond();
-            //System.out.println("Pass 2");
 
-            boolean findableTrack = IsTrackFindable(trackerhits);          
+            //Is particle within tracker acceptance?
+            boolean findableTrack = IsTrackFindable(trackerhits);   
             if(!findableTrack) continue;
-            //System.out.println("Pass 3");
             
-            if(isVDaughterEle) findable.get("ele")[0] = true;
-            if(isVDaughterPos) findable.get("pos")[0] = true;
-            if(isRecoil) findable.get("eleRec")[0] = true;
+            if(isVDaughterEle) findableEle[0] = true;
+            if(isVDaughterPos) findablePos[0] = true;
+            if(isRecoil) findableEleRec[0] = true;
             
             if(ecalhits.size() != 0){
+            	double energy = 0;
+            	//Find position in ecal of particle hit
+            	//This needs to be checked
             	Hep3Vector ecalPos = ecalhits.get(0).getPositionVec();
-            	if(ecalPos.y() > 0){
-            		if(isVDaughterEle) findable.get("ele")[1] = true;
-                	if(isVDaughterPos) findable.get("pos")[1] = true;
-                	if(isRecoil) findable.get("eleRec")[1] = true;
+            	for(SimCalorimeterHit hit:ecalhits){
+            		for(int i = 0; i < hit.getMCParticleCount(); i++){
+            			if(p != hit.getMCParticle(i)) continue;
+            			if(hit.getCorrectedEnergy() > energy){
+            				energy = hit.getCorrectedEnergy();
+            				ecalPos = hit.getPositionVec();
+            			}
+            		}
+            	}
+            	if(p.getMomentum().y() > 0){
+                	if(isVDaughterEle){
+                		findableEle[1] = true;
+                		ecalHitPosEle.fill(ecalPos.x(),ecalPos.y());
+                		posEle = ecalPos;
+                	}
+                	if(isVDaughterPos){
+                		findablePos[1] = true;
+                		ecalHitPosPos.fill(ecalPos.x(),ecalPos.y());
+                		posPos = ecalPos;
+                	}
+                	if(isRecoil){
+                		findableEleRec[1] = true;
+                		ecalHitPosEleRec.fill(ecalPos.x(),ecalPos.y());
+                	}
             	}
             	else{
-            		if(isVDaughterEle) findable.get("ele")[2] = true;
-                	if(isVDaughterPos) findable.get("pos")[2] = true;
-                	if(isRecoil) findable.get("eleRec")[2] = true;
+            		if(isVDaughterEle){
+            			findableEle[2] = true;
+            			ecalHitPosEle.fill(ecalPos.x(),ecalPos.y());
+            			posEle = ecalPos;
+            		}
+                	if(isVDaughterPos){
+                		findablePos[2] = true;
+                		ecalHitPosPos.fill(ecalPos.x(),ecalPos.y());
+                		posPos = ecalPos;
+                	}
+                	if(isRecoil){
+                		findableEleRec[2] = true;
+                		ecalHitPosEleRec.fill(ecalPos.x(),ecalPos.y());
+                	}
             	}
             }
         }
         
-        if(findable.get("ele")[0] && findable.get("pos")[0]){
+        if(findableEle[1] && posPos != null){
+        	ecalHitPosPos_EleTop.fill(posPos.x(),posPos.y());
+        }
+        
+        if(findableEle[2] && posPos != null){
+        	ecalHitPosPos_EleBot.fill(posPos.x(),posPos.y());
+        }
+        
+        if(findablePos[1] && posEle != null){
+        	ecalHitPosEle_PosTop.fill(posEle.x(),posEle.y());
+        }
+        
+        if(findablePos[2] && posEle != null){
+        	ecalHitPosEle_PosBot.fill(posEle.x(),posEle.y());
+        }
+
+        //Fill appropriate histograms with the number of particles within acceptance
+        if(findableEle[0] && findablePos[0]){
         	findableDecaysWithDaughters.fill(0);
-        	if(findable.get("eleRec")[0]){
+        	if(findableEleRec[0]){
         		findableDecaysWithDaughtersWithRecoil.fill(0);
         	}
-        	if((findable.get("ele")[1] && findable.get("pos")[1]) || (findable.get("ele")[2] && findable.get("pos")[2])){
+        	if((findableEle[1] && findablePos[1]) || (findableEle[2] && findablePos[2])){
         		findableDecaysWithDaughtersSameVolWithEcal.fill(0);
-        		if(findable.get("eleRec")[0] && (findable.get("eleRec")[1] || findable.get("eleRec")[2])){
+        		if(findableEleRec[0] && (findableEleRec[1] || findableEleRec[2])){
         			findableDecaysWithDaughtersWithRecoilSameVolWithEcal.fill(0);
         		}
         	}
-        	if((findable.get("ele")[1] && findable.get("pos")[2]) || (findable.get("ele")[2] && findable.get("pos")[1])){
+        	if((findableEle[1] && findablePos[2]) || (findableEle[2] && findablePos[1])){
         		findableDecaysWithDaughtersOppoVolWithEcal.fill(0);
-        		if(findable.get("eleRec")[0] && (findable.get("eleRec")[1] || findable.get("eleRec")[2])){
+        		if(findableEleRec[0] && (findableEleRec[1] || findableEleRec[2])){
         			findableDecaysWithDaughtersWithRecoilOppoVolWithEcal.fill(0);
         		}
         	}
