@@ -612,7 +612,7 @@ public class SvtHitEfficiency extends Driver {
     	    	
     	    	//Compute the extrapolation errors
     	    	//compute error correctly
-    	    	System.out.println("Layer " + unusedLay);
+    	    	//System.out.println("Layer " + unusedLay);
     	    	double yErrorAxial = computeExtrapErrorY(track,tState,axialSensor,endHitPos)[0];
     	    	double yErrorStereo = computeExtrapErrorY(track,tState,stereoSensor,endHitPos)[0];
     	    	
@@ -1069,7 +1069,7 @@ public class SvtHitEfficiency extends Driver {
     
     private double[] computeExtrapErrorY(Track track, TrackState tState, HpsSiSensor sensor, Hep3Vector hitPos){
     	// Extract the corrections to the track parameters and the covariance matrix from the GBL trajectory
-    	System.out.println(sensor.getName());
+    	//System.out.println(sensor.getName());
     	Hep3Vector sensorPos = sensor.getGeometry().getPosition();
     	double bfac = Constants.fieldConversion * bfield;
     	double[] cov = tState.getCovMatrix();
@@ -1084,7 +1084,7 @@ public class SvtHitEfficiency extends Driver {
     		}
     	}
     	
-    	System.out.println("Local Covariance " + locCov);
+    	//System.out.println("Local Covariance " + locCov);
     	
     	int id = 1;
     	GBLStripClusterData strip = new GBLStripClusterData(id);
@@ -1183,7 +1183,7 @@ public class SvtHitEfficiency extends Driver {
         BasicMatrix jacPointToPoint = GblUtils.gblSimpleJacobianLambdaPhi(step, cosLambda, abs(bfac));
     	
     	//System.out.println("Local Cov " + locCov);
-        System.out.println("Jacobian Simple " + jacPointToPoint);
+        //System.out.println("Jacobian Simple " + jacPointToPoint);
        
         //double cosLambda = sqrt(1.0 - sin(tState.getTanLambda()) * sin(tState.getTanLambda()));  
     	//double cosLambda = Math.cos(Math.atan(tState.getTanLambda()));  
@@ -1211,9 +1211,9 @@ public class SvtHitEfficiency extends Driver {
     	MsCov2.set(1,0,MsCov.get(4,3));
     	MsCov2.set(1,1,MsCov.get(4,4));
     	
-    	System.out.println("PerToClJac " + PerToClJac);
+    	//System.out.println("PerToClJac " + PerToClJac);
     	
-    	System.out.println("MsCov " + MsCov);
+    	//System.out.println("MsCov " + MsCov);
         
     	
     	//Matrix measMsCov = ClToPerJac.times(MsCov.times(ClToPerJac.transpose()));
@@ -1223,7 +1223,7 @@ public class SvtHitEfficiency extends Driver {
         Matrix rot = Hep3ToMatrix(electrodes.getGlobalToLocal().getRotation().getRotationMatrix());
         Matrix measMsCov = rot.times(MsCov2.times(rot.transpose()));
     	
-    	System.out.println("Global Y Error " + Math.sqrt(MsCov2.get(1,1)) + "  Y error = " + Math.sqrt(measMsCov.get(0, 0)));
+    	//System.out.println("Global Y Error " + Math.sqrt(MsCov2.get(1,1)) + "  Y error = " + Math.sqrt(measMsCov.get(0, 0)));
     	//System.out.println("");
     	//System.out.println("");
     	
