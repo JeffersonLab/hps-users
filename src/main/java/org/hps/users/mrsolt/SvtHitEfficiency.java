@@ -46,6 +46,7 @@ import org.lcsim.detector.Transform3D;
 import org.lcsim.detector.converter.compact.subdetector.HpsTracker2;
 import org.lcsim.detector.converter.compact.subdetector.SvtStereoLayer;
 import org.lcsim.detector.solids.Box;
+import org.lcsim.detector.solids.LineSegment3D;
 import org.lcsim.detector.solids.Point3D;
 import org.lcsim.detector.solids.Polygon3D;
 import org.lcsim.detector.tracker.silicon.ChargeCarrier;
@@ -223,6 +224,10 @@ public class SvtHitEfficiency extends Driver {
     Map<String, IHistogram2D> errorYvsV = new HashMap<String,IHistogram2D>();
     Map<String, IHistogram2D> pullYvsV = new HashMap<String,IHistogram2D>();
     
+    Map<String, IHistogram2D> residualYvsU = new HashMap<String,IHistogram2D>();
+    Map<String, IHistogram2D> errorYvsU = new HashMap<String,IHistogram2D>();
+    Map<String, IHistogram2D> pullYvsU = new HashMap<String,IHistogram2D>();
+    
     Map<String, IHistogram1D> residualYEle = new HashMap<String,IHistogram1D>();
     Map<String, IHistogram1D> errorYEle = new HashMap<String,IHistogram1D>();
     Map<String, IHistogram1D> pullYEle = new HashMap<String,IHistogram1D>();
@@ -231,6 +236,10 @@ public class SvtHitEfficiency extends Driver {
     Map<String, IHistogram2D> errorYvsVEle = new HashMap<String,IHistogram2D>();
     Map<String, IHistogram2D> pullYvsVEle = new HashMap<String,IHistogram2D>();
     
+    Map<String, IHistogram2D> residualYvsUEle = new HashMap<String,IHistogram2D>();
+    Map<String, IHistogram2D> errorYvsUEle = new HashMap<String,IHistogram2D>();
+    Map<String, IHistogram2D> pullYvsUEle = new HashMap<String,IHistogram2D>();
+    
     Map<String, IHistogram1D> residualYPos = new HashMap<String,IHistogram1D>();
     Map<String, IHistogram1D> errorYPos = new HashMap<String,IHistogram1D>();
     Map<String, IHistogram1D> pullYPos = new HashMap<String,IHistogram1D>();
@@ -238,6 +247,12 @@ public class SvtHitEfficiency extends Driver {
     Map<String, IHistogram2D> residualYvsVPos = new HashMap<String,IHistogram2D>();
     Map<String, IHistogram2D> errorYvsVPos = new HashMap<String,IHistogram2D>();
     Map<String, IHistogram2D> pullYvsVPos = new HashMap<String,IHistogram2D>();
+    
+    Map<String, IHistogram2D> residualYvsUPos = new HashMap<String,IHistogram2D>();
+    Map<String, IHistogram2D> errorYvsUPos = new HashMap<String,IHistogram2D>();
+    Map<String, IHistogram2D> pullYvsUPos = new HashMap<String,IHistogram2D>();
+    
+    
     
     Map<String, IHistogram1D> D0 = new HashMap<String,IHistogram1D>();
     Map<String, IHistogram1D> Z0 = new HashMap<String,IHistogram1D>();
@@ -253,8 +268,11 @@ public class SvtHitEfficiency extends Driver {
     
     //Histogram Settings
     int nBins = 50;
-    double maxV = 60;
-    double minV = -maxV;
+    double maxPull = 7;
+    double minPull = -maxPull;
+    double maxRes = 2;
+    double minRes = -maxRes;
+    double maxYerror = 1;
     double maxD0 = 5;
     double minD0 = -maxD0;
     double maxZ0 = 10;
@@ -275,6 +293,8 @@ public class SvtHitEfficiency extends Driver {
     double minPhi0Err = 0;
     double maxOmegaErr = 0.0001;
     double minOmegaErr = 0;
+    
+    int chanExtd = 0;
     
     String atIP = "IP";
     
@@ -318,6 +338,10 @@ public class SvtHitEfficiency extends Driver {
     
     public void setSig(double nSig) { 
         this.nSig = nSig;
+    }
+    
+    public void setChanExtd(int chanExtd) { 
+        this.chanExtd = chanExtd;
     }
     
     public void setMaskBadChannels(boolean maskBadChannels){
@@ -371,57 +395,60 @@ public class SvtHitEfficiency extends Driver {
 
         for(HpsSiSensor sensor:sensors){
         	String sensorName = sensor.getName();
-        	int nChan = sensor.getNumberOfChannels();
+        	int nChan = sensor.getNumberOfChannels()+chanExtd;
         	double readoutPitch = sensor.getReadoutStripPitch();
-        	double maxY = nChan * readoutPitch / 2;
-        	numberOfTracksChannel.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel " + sensorName, nChan, 0, nChan));
-        	numberOfTracksWithHitOnMissingLayerChannel.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Channel " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyChannel.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel " + sensorName, nChan, 0, nChan));
-        	numberOfTracksY.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y " + sensorName, nBins, -maxY, maxY));
-        	numberOfTracksWithHitOnMissingLayerY.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Y " + sensorName, nBins, -maxY, maxY));
-        	hitEfficiencyY.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y " + sensorName, nBins, -maxY, maxY));
+        	double maxU = nChan * readoutPitch / 2;
+        	double width = getSensorLength(sensor);
+        	double maxV = width/2;
+            double minV = -maxV;
+        	numberOfTracksChannel.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel " + sensorName, nChan, -chanExtd, nChan));
+        	numberOfTracksWithHitOnMissingLayerChannel.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Channel " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyChannel.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel " + sensorName, nChan, -chanExtd, nChan));
+        	numberOfTracksY.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y " + sensorName, nBins, -maxU, maxU));
+        	numberOfTracksWithHitOnMissingLayerY.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Y " + sensorName, nBins, -maxU, maxU));
+        	hitEfficiencyY.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y " + sensorName, nBins, -maxU, maxU));
         	numberOfTracksP.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks P " + sensorName, nBins, 0, 1.3*ebeam));
         	numberOfTracksWithHitOnMissingLayerP.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit P " + sensorName, nBins, 0,  1.3*ebeam));
         	hitEfficiencyP.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	numberOfTracksChannelEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Ele " + sensorName, nChan, 0, nChan));
-        	numberOfTracksWithHitOnMissingLayerChannelEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Channel Ele " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyChannelEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Ele " + sensorName, nChan, 0, nChan));
-        	numberOfTracksYEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Ele " + sensorName, nBins, -maxY, maxY));
-        	numberOfTracksWithHitOnMissingLayerYEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Y Ele " + sensorName, nBins, -maxY, maxY));
-        	hitEfficiencyYEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Ele " + sensorName, nBins, -maxY, maxY));
+        	numberOfTracksChannelEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Ele " + sensorName, nChan, -chanExtd, nChan));
+        	numberOfTracksWithHitOnMissingLayerChannelEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Channel Ele " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyChannelEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Ele " + sensorName, nChan, -chanExtd, nChan));
+        	numberOfTracksYEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Ele " + sensorName, nBins, -maxU, maxU));
+        	numberOfTracksWithHitOnMissingLayerYEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Y Ele " + sensorName, nBins, -maxU, maxU));
+        	hitEfficiencyYEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Ele " + sensorName, nBins, -maxU, maxU));
         	numberOfTracksPEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks P Ele " + sensorName, nBins, 0, 1.3*ebeam));
         	numberOfTracksWithHitOnMissingLayerPEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit P Ele " + sensorName, nBins, 0,  1.3*ebeam));
         	hitEfficiencyPEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Ele " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	numberOfTracksChannelPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Pos " + sensorName, nChan, 0, nChan));
-        	numberOfTracksWithHitOnMissingLayerChannelPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Channel Pos " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyChannelPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Pos " + sensorName, nChan, 0, nChan));
-        	numberOfTracksYPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Pos " + sensorName, nBins, -maxY, maxY));
-        	numberOfTracksWithHitOnMissingLayerYPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Y Pos " + sensorName, nBins, -maxY, maxY));
-        	hitEfficiencyYPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Pos " + sensorName, nBins, -maxY, maxY));
+        	numberOfTracksChannelPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Pos " + sensorName, nChan, -chanExtd, nChan));
+        	numberOfTracksWithHitOnMissingLayerChannelPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Channel Pos " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyChannelPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Pos " + sensorName, nChan, -chanExtd, nChan));
+        	numberOfTracksYPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Pos " + sensorName, nBins, -maxU, maxU));
+        	numberOfTracksWithHitOnMissingLayerYPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit Y Pos " + sensorName, nBins, -maxU, maxU));
+        	hitEfficiencyYPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Pos " + sensorName, nBins, -maxU, maxU));
         	numberOfTracksPPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks P Pos " + sensorName, nBins, 0, 1.3*ebeam));
         	numberOfTracksWithHitOnMissingLayerPPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks With Hit P Pos " + sensorName, nBins, 0,  1.3*ebeam));
         	hitEfficiencyPPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Pos " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	numberOfTracksChannelCorrected.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Corrected " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyChannelCorrected.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected " + sensorName, nChan, 0, nChan));
-        	numberOfTracksYCorrected.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Corrected " + sensorName, nBins, -maxY, maxY));
-        	hitEfficiencyYCorrected.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected " + sensorName, nBins, -maxY, maxY));
+        	numberOfTracksChannelCorrected.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Corrected " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyChannelCorrected.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected " + sensorName, nChan, -chanExtd, nChan));
+        	numberOfTracksYCorrected.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Corrected " + sensorName, nBins, -maxU, maxU));
+        	hitEfficiencyYCorrected.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected " + sensorName, nBins, -maxU, maxU));
         	numberOfTracksPCorrected.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks P Corrected " + sensorName, nBins, 0, 1.3*ebeam));
         	hitEfficiencyPCorrected.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Corrected " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	numberOfTracksChannelCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Corrected Ele " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyChannelCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Ele " + sensorName, nChan, 0, nChan));
-        	numberOfTracksYCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Corrected Ele " + sensorName, nBins, -maxY, maxY));
-        	hitEfficiencyYCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Ele " + sensorName, nBins, -maxY, maxY));
+        	numberOfTracksChannelCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Corrected Ele " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyChannelCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Ele " + sensorName, nChan, -chanExtd, nChan));
+        	numberOfTracksYCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Corrected Ele " + sensorName, nBins, -maxU, maxU));
+        	hitEfficiencyYCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Ele " + sensorName, nBins, -maxU, maxU));
         	numberOfTracksPCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks P Corrected Ele " + sensorName, nBins, 0, 1.3*ebeam));
         	hitEfficiencyPCorrectedEle.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Corrected Ele " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	numberOfTracksChannelCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Corrected Pos " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyChannelCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Pos " + sensorName, nChan, 0, nChan));
-        	numberOfTracksYCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Corrected Pos " + sensorName, nBins, -maxY, maxY));
-        	hitEfficiencyYCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Pos " + sensorName, nBins, -maxY, maxY));
+        	numberOfTracksChannelCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Channel Corrected Pos " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyChannelCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Pos " + sensorName, nChan, -chanExtd, nChan));
+        	numberOfTracksYCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks Y Corrected Pos " + sensorName, nBins, -maxU, maxU));
+        	hitEfficiencyYCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Pos " + sensorName, nBins, -maxU, maxU));
         	numberOfTracksPCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("Number of Tracks P Corrected Pos " + sensorName, nBins, 0, 1.3*ebeam));
         	hitEfficiencyPCorrectedPos.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Corrected Pos " + sensorName, nBins, 0,  1.3*ebeam));
         	
@@ -433,28 +460,28 @@ public class SvtHitEfficiency extends Driver {
         	TotalCorrectedEffEle.put(sensorName,histogramFactory.createHistogram1D("Total Corrected Eff Ele " + sensorName, 1, 0, 1));
         	TotalCorrectedEffPos.put(sensorName,histogramFactory.createHistogram1D("Total Corrected Eff Pos " + sensorName, 1, 0, 1));
         	
-        	hitEfficiencyChannelerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Error " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyYerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Error " + sensorName, nBins, -maxY, maxY));
+        	hitEfficiencyChannelerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Error " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyYerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Error " + sensorName, nBins, -maxU, maxU));
         	hitEfficiencyPerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Error " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	hitEfficiencyChannelCorrectederr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Error " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyYCorrectederr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Error " + sensorName, nBins, -maxY, maxY));
+        	hitEfficiencyChannelCorrectederr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Error " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyYCorrectederr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Error " + sensorName, nBins, -maxU, maxU));
         	hitEfficiencyPCorrectederr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Corrected Error " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	hitEfficiencyChannelEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Ele Error " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyYEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Ele Error " + sensorName, nBins, -maxY, maxY));
+        	hitEfficiencyChannelEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Ele Error " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyYEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Ele Error " + sensorName, nBins, -maxU, maxU));
         	hitEfficiencyPEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Ele Error " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	hitEfficiencyChannelCorrectedEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Ele Error " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyYCorrectedEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Ele Error " + sensorName, nBins, -maxY, maxY));
+        	hitEfficiencyChannelCorrectedEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Ele Error " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyYCorrectedEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Ele Error " + sensorName, nBins, -maxU, maxU));
         	hitEfficiencyPCorrectedEleerr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Corrected Ele Error " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	hitEfficiencyChannelPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Pos Error " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyYPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Pos Error " + sensorName, nBins, -maxY, maxY));
+        	hitEfficiencyChannelPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Pos Error " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyYPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Pos Error " + sensorName, nBins, -maxU, maxU));
         	hitEfficiencyPPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Pos Error " + sensorName, nBins, 0,  1.3*ebeam));
         	
-        	hitEfficiencyChannelCorrectedPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Pos Error " + sensorName, nChan, 0, nChan));
-        	hitEfficiencyYCorrectedPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Pos Error " + sensorName, nBins, -maxY, maxY));
+        	hitEfficiencyChannelCorrectedPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Channel Corrected Pos Error " + sensorName, nChan, -chanExtd, nChan));
+        	hitEfficiencyYCorrectedPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency Y Corrected Pos Error " + sensorName, nBins, -maxU, maxU));
         	hitEfficiencyPCorrectedPoserr.put(sensorName,histogramFactory.createHistogram1D("HitEfficiency P Corrected Pos Error " + sensorName, nBins, 0,  1.3*ebeam));
         	
         	TotalEfferr.put(sensorName,histogramFactory.createHistogram1D("Total Eff Error " + sensorName, 1, 0, 1));
@@ -465,30 +492,42 @@ public class SvtHitEfficiency extends Driver {
         	TotalCorrectedEffEleerr.put(sensorName,histogramFactory.createHistogram1D("Total Corrected Eff Ele Error " + sensorName, 1, 0, 1));
         	TotalCorrectedEffPoserr.put(sensorName,histogramFactory.createHistogram1D("Total Corrected Eff Pos Error " + sensorName, 1, 0, 1));
         	
-        	residualY.put(sensorName,histogramFactory.createHistogram1D("Residual U " + sensorName, nBins, -1, 1));
-        	errorY.put(sensorName,histogramFactory.createHistogram1D("Error U " + sensorName, nBins, 0, 0.5));
-        	pullY.put(sensorName,histogramFactory.createHistogram1D("U Pulls " + sensorName, nBins, -5, 5));
+        	residualY.put(sensorName,histogramFactory.createHistogram1D("Residual U " + sensorName, nBins, minRes, maxRes));
+        	errorY.put(sensorName,histogramFactory.createHistogram1D("Error U " + sensorName, nBins, 0, maxYerror));
+        	pullY.put(sensorName,histogramFactory.createHistogram1D("U Pulls " + sensorName, nBins, minPull, maxPull));
         	residualYerrorYDiff.put(sensorName,histogramFactory.createHistogram1D("Residual U - Error U " + sensorName, nBins, -10, 10));
         	
-        	residualYvsV.put(sensorName,histogramFactory.createHistogram2D("Residual U vs V " + sensorName, 2*nBins, minV, maxV, nBins, -1, 1));
-        	errorYvsV.put(sensorName,histogramFactory.createHistogram2D("Error U vs V " + sensorName, 2*nBins, minV, maxV, nBins, 0, 0.5));
-        	pullYvsV.put(sensorName,histogramFactory.createHistogram2D("U Pulls vs V " + sensorName, 2*nBins, minV, maxV, nBins, -5, 5));
+        	residualYvsV.put(sensorName,histogramFactory.createHistogram2D("Residual U vs V " + sensorName, 2*nBins, minV, maxV, nBins, minRes, maxRes));
+        	errorYvsV.put(sensorName,histogramFactory.createHistogram2D("Error U vs V " + sensorName, 2*nBins, minV, maxV, nBins, 0, maxYerror));
+        	pullYvsV.put(sensorName,histogramFactory.createHistogram2D("U Pulls vs V " + sensorName, 2*nBins, minV, maxV, nBins, minPull, maxPull));
         	
-        	residualYEle.put(sensorName,histogramFactory.createHistogram1D("Residual U Electron " + sensorName, nBins, -1, 1));
-        	errorYEle.put(sensorName,histogramFactory.createHistogram1D("Error U Electron " + sensorName, nBins, 0, 0.5));
-        	pullYEle.put(sensorName,histogramFactory.createHistogram1D("U Pulls Electron " + sensorName, nBins, -5, 5));
+        	residualYvsU.put(sensorName,histogramFactory.createHistogram2D("Residual U vs U " + sensorName, 2*nBins, -maxU, maxU, nBins, minRes, maxRes));
+        	errorYvsU.put(sensorName,histogramFactory.createHistogram2D("Error U vs U " + sensorName, 2*nBins, -maxU, maxU, nBins, 0, maxYerror));
+        	pullYvsU.put(sensorName,histogramFactory.createHistogram2D("U Pulls vs U " + sensorName, 2*nBins, -maxU, maxU, nBins, minPull, maxPull));
         	
-        	residualYvsVEle.put(sensorName,histogramFactory.createHistogram2D("Residual U vs V Electron " + sensorName, 2*nBins, minV, maxV, nBins, -1, 1));
-        	errorYvsVEle.put(sensorName,histogramFactory.createHistogram2D("Error U vs V Electron " + sensorName, 2*nBins, minV, maxV, nBins, 0, 0.5));
-        	pullYvsVEle.put(sensorName,histogramFactory.createHistogram2D("U Pulls vs V Electron " + sensorName, 2*nBins, minV, maxV, nBins, -5, 5));
+        	residualYEle.put(sensorName,histogramFactory.createHistogram1D("Residual U Electron " + sensorName, nBins, minRes, maxRes));
+        	errorYEle.put(sensorName,histogramFactory.createHistogram1D("Error U Electron " + sensorName, nBins, 0, maxYerror));
+        	pullYEle.put(sensorName,histogramFactory.createHistogram1D("U Pulls Electron " + sensorName, nBins, minPull, maxPull));
         	
-        	residualYPos.put(sensorName,histogramFactory.createHistogram1D("Residual U Positron " + sensorName, nBins, -1, 1));
-        	errorYPos.put(sensorName,histogramFactory.createHistogram1D("Error U Positron " + sensorName, nBins, 0, 0.5));
-        	pullYPos.put(sensorName,histogramFactory.createHistogram1D("U Pulls Positron " + sensorName, nBins, -5, 5));
+        	residualYvsVEle.put(sensorName,histogramFactory.createHistogram2D("Residual U vs V Electron " + sensorName, 2*nBins, minV, maxV, nBins, minRes, maxRes));
+        	errorYvsVEle.put(sensorName,histogramFactory.createHistogram2D("Error U vs V Electron " + sensorName, 2*nBins, minV, maxV, nBins, 0, maxYerror));
+        	pullYvsVEle.put(sensorName,histogramFactory.createHistogram2D("U Pulls vs V Electron " + sensorName, 2*nBins, minV, maxV, nBins, minPull, maxPull));
         	
-        	residualYvsVPos.put(sensorName,histogramFactory.createHistogram2D("Residual U vs V Positron " + sensorName, 2*nBins, minV, maxV, nBins, -1, 1));
-        	errorYvsVPos.put(sensorName,histogramFactory.createHistogram2D("Error U vs V Positron " + sensorName, 2*nBins, minV, maxV, nBins, 0, 0.5));
-        	pullYvsVPos.put(sensorName,histogramFactory.createHistogram2D("U Pulls vs V Positron " + sensorName, 2*nBins, minV, maxV, nBins, -5, 5));
+        	residualYvsUEle.put(sensorName,histogramFactory.createHistogram2D("Residual U vs U Electron " + sensorName, 2*nBins, -maxU, maxU, nBins, minRes, maxRes));
+        	errorYvsUEle.put(sensorName,histogramFactory.createHistogram2D("Error U vs U Electron " + sensorName, 2*nBins, -maxU, maxU, nBins, 0, maxYerror));
+        	pullYvsUEle.put(sensorName,histogramFactory.createHistogram2D("U Pulls vs U Electron " + sensorName, 2*nBins, -maxU, maxU, nBins, minPull, maxPull));
+        	
+        	residualYPos.put(sensorName,histogramFactory.createHistogram1D("Residual U Positron " + sensorName, nBins, minRes, maxRes));
+        	errorYPos.put(sensorName,histogramFactory.createHistogram1D("Error U Positron " + sensorName, nBins, 0, maxYerror));
+        	pullYPos.put(sensorName,histogramFactory.createHistogram1D("U Pulls Positron " + sensorName, nBins, minPull, maxPull));
+        	
+        	residualYvsVPos.put(sensorName,histogramFactory.createHistogram2D("Residual U vs V Positron " + sensorName, 2*nBins, minV, maxV, nBins, minRes, maxRes));
+        	errorYvsVPos.put(sensorName,histogramFactory.createHistogram2D("Error U vs V Positron " + sensorName, 2*nBins, minV, maxV, nBins, 0, maxYerror));
+        	pullYvsVPos.put(sensorName,histogramFactory.createHistogram2D("U Pulls vs V Positron " + sensorName, 2*nBins, minV, maxV, nBins, minPull, maxPull));
+        	
+        	residualYvsUPos.put(sensorName,histogramFactory.createHistogram2D("Residual U vs U Positron " + sensorName, 2*nBins, -maxU, maxU, nBins, minRes, maxRes));
+        	errorYvsUPos.put(sensorName,histogramFactory.createHistogram2D("Error U vs U Positron " + sensorName, 2*nBins, -maxU, maxU, nBins, 0, maxYerror));
+        	pullYvsUPos.put(sensorName,histogramFactory.createHistogram2D("U Pulls vs U Positron " + sensorName, 2*nBins, -maxU, maxU, nBins, minPull, maxPull));
         	
         	D0.put(sensorName,histogramFactory.createHistogram1D("D0 " + sensorName, nBins, minD0, maxD0));
         	Z0.put(sensorName,histogramFactory.createHistogram1D("Z0 " + sensorName, nBins, minZ0, maxZ0));
@@ -676,17 +715,23 @@ public class SvtHitEfficiency extends Driver {
     	    	errorY.get(sensorStereoName).fill(yErrorStereo);
     	    	errorYvsV.get(sensorAxialName).fill(axialExtrapPosSensor.y(),yErrorAxial);
     	    	errorYvsV.get(sensorStereoName).fill(stereoExtrapPosSensor.y(),yErrorStereo);
+    	    	errorYvsU.get(sensorAxialName).fill(axialExtrapPosSensor.x(),yErrorAxial);
+    	    	errorYvsU.get(sensorStereoName).fill(stereoExtrapPosSensor.x(),yErrorStereo);
     	    	if(q < 0){
     	    		errorYEle.get(sensorAxialName).fill(yErrorAxial);
         	    	errorYEle.get(sensorStereoName).fill(yErrorStereo);
         	    	errorYvsVEle.get(sensorAxialName).fill(axialExtrapPosSensor.y(),yErrorAxial);
         	    	errorYvsVEle.get(sensorStereoName).fill(stereoExtrapPosSensor.y(),yErrorStereo);
+        	    	errorYvsUEle.get(sensorAxialName).fill(axialExtrapPosSensor.x(),yErrorAxial);
+        	    	errorYvsUEle.get(sensorStereoName).fill(stereoExtrapPosSensor.x(),yErrorStereo);
     	    	}
     	    	else{
     	    		errorYPos.get(sensorAxialName).fill(yErrorAxial);
         	    	errorYPos.get(sensorStereoName).fill(yErrorStereo);
         	    	errorYvsVPos.get(sensorAxialName).fill(axialExtrapPosSensor.y(),yErrorAxial);
         	    	errorYvsVPos.get(sensorStereoName).fill(stereoExtrapPosSensor.y(),yErrorStereo);
+        	    	errorYvsUPos.get(sensorAxialName).fill(axialExtrapPosSensor.x(),yErrorAxial);
+        	    	errorYvsUPos.get(sensorStereoName).fill(stereoExtrapPosSensor.x(),yErrorStereo);
     	    	}
     	    	double residualAxial = 9999;
     	    	double residualStereo = 9999;
@@ -702,7 +747,7 @@ public class SvtHitEfficiency extends Driver {
             	    	//Compute the residual between extrapolated track and hit position and fill histo
             	    	//double residual = axialExtrapPos.y() - hitPos[1];
             	    	double residual = axialExtrapPosSensor.x() - hitPosSensor.x();
-            	    	if(residual < residualAxial){
+            	    	if(Math.abs(residual) < Math.abs(residualAxial)){
             	    		residualAxial = residual;
             	    	}
             	    }
@@ -711,11 +756,15 @@ public class SvtHitEfficiency extends Driver {
             	    	//Compute the residual between extrapolated track and hit position and fill histo
             	    	//double residual = stereoExtrapPos.y() - hitPos[1];
             	    	double residual = stereoExtrapPosSensor.x() - hitPosSensor.x();
-            	    	if(residual < residualStereo){
+            	    	if(Math.abs(residual) < Math.abs(residualStereo)){
             	    		residualStereo = residual;
             	    	}
             	    }
     	    	}
+    	    	
+    	    	
+    	    	
+    	    	
         	    //Compute the residual between extrapolated track and hit position and fill histo
         	    //double residual = axialExtrapPos.y() - hitPos[1];
         	    residualY.get(sensorAxialName).fill(residualAxial);
@@ -730,6 +779,11 @@ public class SvtHitEfficiency extends Driver {
         	    residualYvsV.get(sensorStereoName).fill(stereoExtrapPosSensor.y(),residualStereo);
         	    pullYvsV.get(sensorStereoName).fill(stereoExtrapPosSensor.y(),residualStereo/yErrorStereo);
         	    
+        	    residualYvsU.get(sensorAxialName).fill(axialExtrapPosSensor.x(),residualAxial);
+        	    pullYvsU.get(sensorAxialName).fill(axialExtrapPosSensor.x(),residualAxial/yErrorAxial);
+        	    residualYvsU.get(sensorStereoName).fill(stereoExtrapPosSensor.x(),residualStereo);
+        	    pullYvsU.get(sensorStereoName).fill(stereoExtrapPosSensor.x(),residualStereo/yErrorStereo);
+        	    
         	    if(q < 0){
         	    	residualYEle.get(sensorAxialName).fill(residualAxial);
             	    pullYEle.get(sensorAxialName).fill(residualAxial/yErrorAxial);
@@ -740,6 +794,11 @@ public class SvtHitEfficiency extends Driver {
             	    pullYvsVEle.get(sensorAxialName).fill(axialExtrapPosSensor.y(),residualAxial/yErrorAxial);
             	    residualYvsVEle.get(sensorStereoName).fill(stereoExtrapPosSensor.y(),residualStereo);
             	    pullYvsVEle.get(sensorStereoName).fill(stereoExtrapPosSensor.y(),residualStereo/yErrorStereo);
+            	    
+            	    residualYvsUEle.get(sensorAxialName).fill(axialExtrapPosSensor.x(),residualAxial);
+            	    pullYvsUEle.get(sensorAxialName).fill(axialExtrapPosSensor.x(),residualAxial/yErrorAxial);
+            	    residualYvsUEle.get(sensorStereoName).fill(stereoExtrapPosSensor.x(),residualStereo);
+            	    pullYvsUEle.get(sensorStereoName).fill(stereoExtrapPosSensor.x(),residualStereo/yErrorStereo);
         	    }
         	    else{
         	    	residualYPos.get(sensorAxialName).fill(residualAxial);
@@ -751,6 +810,11 @@ public class SvtHitEfficiency extends Driver {
             	    pullYvsVPos.get(sensorAxialName).fill(axialExtrapPosSensor.y(),residualAxial/yErrorAxial);
             	    residualYvsVPos.get(sensorStereoName).fill(stereoExtrapPosSensor.y(),residualStereo);
             	    pullYvsVPos.get(sensorStereoName).fill(stereoExtrapPosSensor.y(),residualStereo/yErrorStereo);
+            	    
+            	    residualYvsUPos.get(sensorAxialName).fill(axialExtrapPosSensor.x(),residualAxial);
+            	    pullYvsUPos.get(sensorAxialName).fill(axialExtrapPosSensor.x(),residualAxial/yErrorAxial);
+            	    residualYvsUPos.get(sensorStereoName).fill(stereoExtrapPosSensor.x(),residualStereo);
+            	    pullYvsUPos.get(sensorStereoName).fill(stereoExtrapPosSensor.x(),residualStereo/yErrorStereo);
         	    }
         	    
         	    if((Math.abs(residualAxial) < this.nSig * yErrorAxial)){
@@ -786,6 +850,10 @@ public class SvtHitEfficiency extends Driver {
             	    	numberOfTracksWithHitOnMissingLayerPPos.get(sensorStereoName).fill(trackP);
         	    	}
         	    }
+        	    
+        	    
+        	    
+        	    
 	    		
     	    	//Loop over all tracker hits in the event
     	    	/*boolean fillAxial = false;
@@ -1773,15 +1841,40 @@ public class SvtHitEfficiency extends Driver {
     	Hep3Vector pos = globalToSensor(trackPosition, sensor);
     	int nChan = sensor.getNumberOfChannels();
     	int chan = getChan(pos,sensor);
-    	double width = 100;
+    	//double width = 100;
+    	
+    	double width = getSensorLength(sensor);
+    	
+    	//System.out.println(sensor.getName() + " pos " + sensor.getGeometry().getPosition() + " sensor pos " + globalToSensor(sensor.getGeometry().getPosition(),sensor) + " width " + width);
 
-    	if(chan < 0 || chan > nChan){
+    	if(chan < this.chanExtd || chan > (nChan + this.chanExtd)){
     		return new Pair<>(false,chan);
     	}
     	if(Math.abs(pos.y())>width/2){
     		return new Pair<>(false,chan);
     	}
     	return new Pair<>(true,chan);
+    }
+
+    protected double getSensorLength(HpsSiSensor sensor) {
+
+        double length = 0;
+
+        // Get the faces normal to the sensor
+        final List<Polygon3D> faces = ((Box) sensor.getGeometry().getLogicalVolume().getSolid())
+                .getFacesNormalTo(new BasicHep3Vector(0, 0, 1));
+        for (final Polygon3D face : faces) {
+
+            // Loop through the edges of the sensor face and find the longest
+            // one
+            final List<LineSegment3D> edges = face.getEdges();
+            for (final LineSegment3D edge : edges) {
+                if (edge.getLength() > length) {
+                    length = edge.getLength();
+                }
+            }
+        }
+        return length;
     }
     
     public void endOfData(){
@@ -1795,34 +1888,35 @@ public class SvtHitEfficiency extends Driver {
 
         for(HpsSiSensor sensor:sensors){
         	String sensorName = sensor.getName();
-        	int nChan = sensor.getNumberOfChannels();
+        	int nChan = sensor.getNumberOfChannels() + chanExtd*2;
         	for(int i = 0; i < nChan; i++){ 
+        		int chan = i - chanExtd;
         	    if(numberOfTracksChannel.get(sensorName).binHeight(i) != 0 && numberOfTracksChannel.get(sensorName).binHeight(i) != 0){
-        	        hitEfficiencyChannel.get(sensorName).fill(i,numberOfTracksWithHitOnMissingLayerChannel.get(sensorName).binHeight(i)/(double)numberOfTracksChannel.get(sensorName).binHeight(i));
-        	        hitEfficiencyChannelerr.get(sensorName).fill(i,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannel.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannel.get(sensorName).binHeight(i)));
-        	        hitEfficiencyChannelCorrected.get(sensorName).fill(i,numberOfTracksWithHitOnMissingLayerChannel.get(sensorName).binHeight(i)/(double)numberOfTracksChannelCorrected.get(sensorName).binHeight(i));
-        	        hitEfficiencyChannelCorrectederr.get(sensorName).fill(i,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannel.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannel.get(sensorName).binHeight(i)));
+        	        hitEfficiencyChannel.get(sensorName).fill(chan,numberOfTracksWithHitOnMissingLayerChannel.get(sensorName).binHeight(i)/(double)numberOfTracksChannel.get(sensorName).binHeight(i));
+        	        hitEfficiencyChannelerr.get(sensorName).fill(chan,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannel.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannel.get(sensorName).binHeight(i)));
+        	        hitEfficiencyChannelCorrected.get(sensorName).fill(chan,numberOfTracksWithHitOnMissingLayerChannel.get(sensorName).binHeight(i)/(double)numberOfTracksChannelCorrected.get(sensorName).binHeight(i));
+        	        hitEfficiencyChannelCorrectederr.get(sensorName).fill(chan,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannel.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannel.get(sensorName).binHeight(i)));
         	    }
         	    if(numberOfTracksChannelEle.get(sensorName).binHeight(i) != 0 && numberOfTracksChannelEle.get(sensorName).binHeight(i) != 0){
-        	    	hitEfficiencyChannelEle.get(sensorName).fill(i,numberOfTracksWithHitOnMissingLayerChannelEle.get(sensorName).binHeight(i)/(double)numberOfTracksChannelEle.get(sensorName).binHeight(i));
-        	    	hitEfficiencyChannelEleerr.get(sensorName).fill(i,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannelEle.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannelEle.get(sensorName).binHeight(i)));
-        	    	hitEfficiencyChannelCorrectedEle.get(sensorName).fill(i,numberOfTracksWithHitOnMissingLayerChannelEle.get(sensorName).binHeight(i)/(double)numberOfTracksChannelCorrectedEle.get(sensorName).binHeight(i));
-        	    	hitEfficiencyChannelCorrectedEleerr.get(sensorName).fill(i,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannelEle.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannelCorrectedEle.get(sensorName).binHeight(i)));
+        	    	hitEfficiencyChannelEle.get(sensorName).fill(chan,numberOfTracksWithHitOnMissingLayerChannelEle.get(sensorName).binHeight(i)/(double)numberOfTracksChannelEle.get(sensorName).binHeight(i));
+        	    	hitEfficiencyChannelEleerr.get(sensorName).fill(chan,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannelEle.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannelEle.get(sensorName).binHeight(i)));
+        	    	hitEfficiencyChannelCorrectedEle.get(sensorName).fill(chan,numberOfTracksWithHitOnMissingLayerChannelEle.get(sensorName).binHeight(i)/(double)numberOfTracksChannelCorrectedEle.get(sensorName).binHeight(i));
+        	    	hitEfficiencyChannelCorrectedEleerr.get(sensorName).fill(chan,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannelEle.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannelCorrectedEle.get(sensorName).binHeight(i)));
         	    }
         	    if(numberOfTracksChannelPos.get(sensorName).binHeight(i) != 0 && numberOfTracksChannelPos.get(sensorName).binHeight(i)!= 0){
-        	    	hitEfficiencyChannelPos.get(sensorName).fill(i,numberOfTracksWithHitOnMissingLayerChannelPos.get(sensorName).binHeight(i)/(double)numberOfTracksChannelPos.get(sensorName).binHeight(i));
-        	    	hitEfficiencyChannelPoserr.get(sensorName).fill(i,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannelPos.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannelPos.get(sensorName).binHeight(i)));
-        	    	hitEfficiencyChannelCorrectedPos.get(sensorName).fill(i,numberOfTracksWithHitOnMissingLayerChannelPos.get(sensorName).binHeight(i)/(double)numberOfTracksChannelCorrectedPos.get(sensorName).binHeight(i));
-        	    	hitEfficiencyChannelCorrectedPoserr.get(sensorName).fill(i,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannelPos.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannelCorrectedPos.get(sensorName).binHeight(i)));
+        	    	hitEfficiencyChannelPos.get(sensorName).fill(chan,numberOfTracksWithHitOnMissingLayerChannelPos.get(sensorName).binHeight(i)/(double)numberOfTracksChannelPos.get(sensorName).binHeight(i));
+        	    	hitEfficiencyChannelPoserr.get(sensorName).fill(chan,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannelPos.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannelPos.get(sensorName).binHeight(i)));
+        	    	hitEfficiencyChannelCorrectedPos.get(sensorName).fill(chan,numberOfTracksWithHitOnMissingLayerChannelPos.get(sensorName).binHeight(i)/(double)numberOfTracksChannelCorrectedPos.get(sensorName).binHeight(i));
+        	    	hitEfficiencyChannelCorrectedPoserr.get(sensorName).fill(chan,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerChannelPos.get(sensorName).binHeight(i) + 1/(double)numberOfTracksChannelCorrectedPos.get(sensorName).binHeight(i)));
         	    }
         	}
         	for(int i = 0; i < nBins; i++){
         		double yMax = sensor.getNumberOfChannels() * sensor.getReadoutStripPitch() / 2;
         		double yMin = -yMax;
-        		double y = (yMax-yMin)/(double) nBins * i + yMin;
+        		double y = (yMax-yMin)/(double) nBins * (i + 0.5) + yMin;
         		double pMax = 1.3 * ebeam;
         		double pMin = 0;
-        		double p = (pMax-pMin)/(double) nBins * i + pMin;
+        		double p = (pMax-pMin)/(double) nBins * (i + 0.5) + pMin;
         	    if(numberOfTracksY.get(sensorName).binHeight(i) != 0 && numberOfTracksY.get(sensorName).binHeight(i) != 0){
         	    	hitEfficiencyY.get(sensorName).fill(y,numberOfTracksWithHitOnMissingLayerY.get(sensorName).binHeight(i)/(double)numberOfTracksY.get(sensorName).binHeight(i));
         	    	hitEfficiencyYerr.get(sensorName).fill(y,Math.sqrt(1/(double)numberOfTracksWithHitOnMissingLayerY.get(sensorName).binHeight(i) + 1/(double)numberOfTracksY.get(sensorName).binHeight(i)));
