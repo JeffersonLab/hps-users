@@ -179,6 +179,7 @@ public class FeeHistogramDriver extends Driver{
     private IHistogram2D twoFeeClustX_bb;
     private IHistogram2D twoFeeClustX_tt;
     private IHistogram2D feeClustXY;
+    private IHistogram2D feeClustSeedXY;
     
     private IHistogram1D twoFeeClustDX_bb;
     private IHistogram1D twoFeeClustDX_tb;
@@ -189,6 +190,11 @@ public class FeeHistogramDriver extends Driver{
     private IHistogram1D twoFeeTrackDphi_tt;
     private IHistogram1D w_carbon;
     private IHistogram1D w_tungsten;
+    private IHistogram2D[] uxVsUyNoTrackQualityCuts;
+    private IHistogram2D[] uxVsUyChi2Cut;
+    private IHistogram2D[] uxVsUyTrackExtrapCut;
+    private IHistogram2D[] uxVsUyMomentumCut;
+    private IHistogram2D[] uxVsUy6;
     
     void setupHistograms(){
 
@@ -221,6 +227,16 @@ public class FeeHistogramDriver extends Driver{
 
         String[] regionNames = {"", " r1", " r2", " r3", " r4"};
 
+
+        
+        
+        uxVsUy = new IHistogram2D[regionNames.length];        
+        uxVsUyInRange = new IHistogram2D[regionNames.length];        
+        uxVsUyNoTrackQualityCuts = new IHistogram2D[regionNames.length];        
+        uxVsUyChi2Cut = new IHistogram2D[regionNames.length];        
+        uxVsUyTrackExtrapCut = new IHistogram2D[regionNames.length];        
+        uxVsUyMomentumCut = new IHistogram2D[regionNames.length];        
+        uxVsUy6 = new IHistogram2D[regionNames.length];
         thetaVsPhi = new IHistogram2D[regionNames.length];
         thetaVsPhiInRange= new IHistogram2D[regionNames.length];
         thetaVsPhiNoTrackQualityCuts = new IHistogram2D[regionNames.length];
@@ -236,7 +252,15 @@ public class FeeHistogramDriver extends Driver{
             thetaVsPhiTrackExtrapCut[i] = aida.histogram2D(prependFolderName("theta vs phi track extrap cut" + regionNames[i]), nBinsPhi, 0, .2, 628, -3.14, 3.14);
             thetaVsPhiMomentumCut[i] = aida.histogram2D(prependFolderName("theta vs phi chi2 momentum cut" + regionNames[i]), nBinsPhi, 0, .2, 628, -3.14, 3.14);
             thetaVsPhi6[i] = aida.histogram2D(prependFolderName("theta vs phi 6 hits" + regionNames[i]), nBinsPhi, 0, .2, 628, -3.14, 3.14);
-
+            
+            uxVsUy[i] = aida.histogram2D(prependFolderName("ux vs uy" + regionNames[i]), 300, -.16, .24, 300, -.2, .2);
+            uxVsUyInRange[i] = aida.histogram2D(prependFolderName("ux vs uy in range" + regionNames[i]), 300, -.16, .24, 300, -.2, .2);
+            uxVsUyNoTrackQualityCuts[i] = aida.histogram2D(prependFolderName("ux vs uy no track quality cuts" + regionNames[i]), 300, -.16, .24, 300, -.2, .2);
+            uxVsUyChi2Cut[i] = aida.histogram2D(prependFolderName("ux vs uy chi2 cut" + regionNames[i]), 300, -.16, .24, 300, -.2, .2);
+            uxVsUyTrackExtrapCut[i] = aida.histogram2D(prependFolderName("ux vs uy track extrap cut" + regionNames[i]), 300, -.16, .24, 300, -.2, .2);
+            uxVsUyMomentumCut[i] = aida.histogram2D(prependFolderName("ux vs uy chi2 momentum cut" + regionNames[i]), 300, -.16, .24, 300, -.2, .2);
+            uxVsUy6[i] = aida.histogram2D(prependFolderName("ux vs uy 6 hits" + regionNames[i]), 300, -.16, .24, 300, -.2, .2);
+            
         }
         theta = aida.histogram1D(prependFolderName("theta"), nBinsPhi, 0, .2);
         thetaInRange = aida.histogram1D(prependFolderName("theta in range"), nBinsPhi, 0, .2);
@@ -246,8 +270,6 @@ public class FeeHistogramDriver extends Driver{
 
         thetaBottomOnly = aida.histogram1D(prependFolderName("theta bottom"), nBinsPhi, 0, .2);
         thetaBottomOnlyInRange = aida.histogram1D(prependFolderName("theta bottom in range"), nBinsPhi, 0, .2);
-        uxVsUy = aida.histogram2D(prependFolderName("ux vs uy"), 300, -.16, .24, 300, -.2, .2);
-        uxVsUyInRange = aida.histogram2D(prependFolderName("ux vs uy in range"), 300, -.16, .24, 300, -.2, .2);
         d0VsZ0 = aida.histogram2D(prependFolderName("d0 vs z0"), 100, -5, 5, 100, -5, 5);
         d0 = aida.histogram1D(prependFolderName("d0"), 200, -3, 3);
         z0 = aida.histogram1D(prependFolderName("z0"), 200, -1.5, 1.5);
@@ -276,6 +298,7 @@ public class FeeHistogramDriver extends Driver{
         thetaVsEnergy = aida.histogram2D(prependFolderName("theta vs energy"), 100, 0, .2, 100, 0, 1.2*beamEnergy);
         thetaVsEnergyFid = aida.histogram2D(prependFolderName("theta vs energy fiducial"), 100, 0, .2, 100, 0, 1.2*beamEnergy);
 
+        feeClustSeedXY = aida.histogram2D(prependFolderName("fee cluster seed ixiy"), 47, -23.5, 23.5, 11, -5.5, 5.5);
 
         dxdyAtEcal = aida.histogram2D(prependFolderName("dxdy at ecal"), 200, -20, 20, 200, -20, 20);
 
@@ -315,7 +338,7 @@ public class FeeHistogramDriver extends Driver{
         return folder + "/" + histName;
     }
     
-    IHistogram2D uxVsUy, uxVsUyInRange;
+    IHistogram2D[] uxVsUy, uxVsUyInRange;
 
     IHistogram1D pHist;
     IHistogram1D clustSize;
@@ -523,13 +546,19 @@ public class FeeHistogramDriver extends Driver{
             double pytilt = -py*sx*sy + py*cy  -pz*sy*cx;
             double pztilt = px*cy*sx  + py*sy  +pz*cy*cx;
 
-
+            double ux = pxtilt/pztilt;
+            double uy = pytilt/pztilt;
+            
             double theta = atan(hypot(pxtilt, pytilt)/pztilt);
             double phi =atan2(pytilt, pxtilt);
-            if(useLowestPrescale)
+            if(useLowestPrescale){
                 fillRegion(thetaVsPhiNoTrackQualityCuts, theta, phi, region);
-            else
+                fillRegion(uxVsUyNoTrackQualityCuts, ux, uy, region);
+            }
+            else{
                 fill(thetaVsPhiNoTrackQualityCuts,theta, phi, col);
+                fill(uxVsUyNoTrackQualityCuts, ux, uy, col);
+            }
 
             double dx = getDx(part);
             double dy = getDy(part);
@@ -544,10 +573,14 @@ public class FeeHistogramDriver extends Driver{
             //if(abs(dx)>trackExtrapCutX || abs(dy)> trackExtrapCutY)
             if(part.getGoodnessOfPID() > nSigmaCut )
                 continue;
-            if(useLowestPrescale)
+            if(useLowestPrescale){
                 fillRegion(thetaVsPhiTrackExtrapCut, theta, phi, region);
-            else
+                fillRegion(uxVsUyTrackExtrapCut, ux, uy, region);
+            }
+            else{
                 fill(thetaVsPhiTrackExtrapCut,theta, phi, col);
+                fill(uxVsUyTrackExtrapCut, ux, uy, col);
+            }
 
             Track track = part.getTracks().get(0);
 
@@ -557,21 +590,28 @@ public class FeeHistogramDriver extends Driver{
 
             if(track.getChi2()>maxChi2)
                 continue;
-            if(useLowestPrescale)
+            if(useLowestPrescale){
                 fillRegion(thetaVsPhiChi2Cut, theta, phi, region);
-            else
+                fillRegion(uxVsUyChi2Cut, ux, uy, region);
+            }
+            else{
                 fill(thetaVsPhiChi2Cut,theta, phi, col);
-
+                fill(uxVsUyChi2Cut, ux, uy, col);
+            }
 
 
             double pmag = part.getMomentum().magnitude();
             pHist.fill(pmag);
             if(pmag > pMax || pmag < pMin)
                 continue;
-            if(useLowestPrescale)
+            if(useLowestPrescale){
                 fillRegion(thetaVsPhiMomentumCut, theta, phi, region);
-            else
+                fillRegion(uxVsUyMomentumCut, ux, uy, region);
+            }
+            else{
                 fill(thetaVsPhiMomentumCut,theta, phi, col);
+                fill(uxVsUyMomentumCut, ux, uy, col);
+            }
 
             double d = TrackUtils.getDoca(track);
             d0.fill(d);
@@ -625,17 +665,25 @@ public class FeeHistogramDriver extends Driver{
              */
 
 
-            uxVsUy.fill(pxtilt/pztilt, pytilt/pztilt);
-            if(useLowestPrescale)
+            //uxVsUy.fill(pxtilt/pztilt, pytilt/pztilt);
+            if(useLowestPrescale){
                 fillRegion(thetaVsPhi, theta, phi, region);
-            else
+                fillRegion(uxVsUy, ux, uy, region);
+            }
+            else{
                 fill(thetaVsPhi,theta, phi, col);
-
+                fill(uxVsUy, ux, uy, col);
+            }
             if(track.getTrackerHits().size() == 6){
-                if(useLowestPrescale )
+                if(useLowestPrescale ){
                     fillRegion(thetaVsPhi6, theta, phi, region);
-                else
+                    fillRegion(uxVsUy6, ux, uy, region);
+                }
+                else{
                     fill(thetaVsPhi6,theta, phi, col);
+                    fill(uxVsUy, ux, uy, col);
+                    
+                }
             }
 
             this.theta.fill(theta);
@@ -648,6 +696,7 @@ public class FeeHistogramDriver extends Driver{
             thetaVsEnergy.fill(theta, part.getEnergy());
             if(cb.inRange(theta, phi)){
                 fill(thetaVsPhiInRange, theta, phi, col);
+                fill(uxVsUyInRange, ux, uy, col);
                 thetaInRange.fill(theta);
                 if(phi > 0)
                 {
@@ -658,7 +707,7 @@ public class FeeHistogramDriver extends Driver{
                     nfidBot++;
                     thetaBottomOnlyInRange.fill(theta);
                 }
-                uxVsUyInRange.fill(pxtilt/pztilt, pytilt/pztilt);
+                //uxVsUyInRange.fill(pxtilt/pztilt, pytilt/pztilt);
                 nPassFidCuts++;
                 thetaVsMomentumFid.fill(theta, pz);
                 thetaVsEnergyFid.fill(theta, part.getEnergy());
@@ -727,6 +776,18 @@ public class FeeHistogramDriver extends Driver{
         for(Cluster c1 : feeClustersTop){
             feeClustXY.fill(c1.getPosition()[0], c1.getPosition()[1]);
         }
+        //seed hit position
+        for(Cluster c1 : feeClustersBot){
+            int ix = c1.getCalorimeterHits().get(0).getIdentifierFieldValue("ix");
+            int iy = c1.getCalorimeterHits().get(0).getIdentifierFieldValue("iy");
+            feeClustSeedXY.fill(ix, iy);
+        }
+        for(Cluster c1 : feeClustersTop){
+            int ix = c1.getCalorimeterHits().get(0).getIdentifierFieldValue("ix");
+            int iy = c1.getCalorimeterHits().get(0).getIdentifierFieldValue("iy");
+            feeClustSeedXY.fill(ix, iy);
+        }
+        
 
     }
     private double W(double ep, double e, double m, double theta) {
@@ -811,25 +872,25 @@ public class FeeHistogramDriver extends Driver{
         return ret;
     }
 
-    private void fill(IHistogram2D[] thetaVsPhiHist, double theta,
-            double phi, int col) {
-        thetaVsPhiHist[0].fill(theta, phi);
+    private void fill(IHistogram2D[] histList, double xvar,
+            double yvar, int col) {
+        histList[0].fill(xvar, yvar);
         if(col <= -14 || col>=6)
-            thetaVsPhiHist[1].fill(theta, phi);
+            histList[1].fill(xvar, yvar);
         else if (col <= -10 || col >= 2)
-            thetaVsPhiHist[2].fill(theta, phi);
+            histList[2].fill(xvar, yvar);
         else if (col <= -8 || col >= -3)
-            thetaVsPhiHist[3].fill(theta, phi);
+            histList[3].fill(xvar, yvar);
         else 
-            thetaVsPhiHist[4].fill(theta, phi);
+            histList[4].fill(xvar, yvar);
 
     }
 
-    private void fillRegion(IHistogram2D[] thetaVsPhiHist, double theta,
-            double phi, int region) {
-        thetaVsPhiHist[0].fill(theta, phi);
+    private void fillRegion(IHistogram2D[] histList, double xvar,
+            double yvar, int region) {
+        histList[0].fill(xvar, yvar);
         if(region <= 4 && region >=1)
-            thetaVsPhiHist[region].fill(theta, phi);
+            histList[region].fill(xvar, yvar);
 
     }
 

@@ -9,13 +9,14 @@ import org.lcsim.event.EventHeader;
 import org.lcsim.event.ReconstructedParticle;
 import org.lcsim.event.Track;
 import org.lcsim.event.TrackerHit;
+import org.lcsim.geometry.Detector;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
 import hep.aida.IHistogram1D;
 import hep.aida.IHistogram2D;
 
 
-public class MassHistogramDriver extends Driver{
+public class CutflowHistogramDriver extends Driver{
     AIDA aida = AIDA.defaultInstance();
 
     private double goodnessPidThreshold = 5;
@@ -40,9 +41,7 @@ public class MassHistogramDriver extends Driver{
         this.maxSharedHits = maxSharedHits;
     }
 
-    public void setUseBeamEnergyConstraint(boolean useBeamEnergyConstraint) {
-        this.useBeamEnergyConstraint = useBeamEnergyConstraint;
-    }
+
 
     public void setPosD0Threshold(double posD0Threshold) {
         this.posD0Threshold = posD0Threshold;
@@ -55,14 +54,7 @@ public class MassHistogramDriver extends Driver{
     private double trackClusterTimeDiffThresholdAbs = 4.5;
 
     private int maxSharedHits = 3;
-    private boolean useBeamEnergyConstraint;
-    /**
-     * determines whether or not the mass will be scaled down if the 
-     * reconstructed pair momentum is greater than the beam energy.  
-     */
-    public void setBeamEnergyConstraint(boolean val){
-        useBeamEnergyConstraint = val;
-    }
+    
     
     public void setRadThreshold(double val){
         radThreshold = val;
@@ -92,7 +84,66 @@ public class MassHistogramDriver extends Driver{
 
     int nCDTbins = 100;
     double maxCDT = 10;
-
+    
+    
+    String levels[] = {"__pre", "__fee_cut", "__pz_tot_max_cut", "__chi2_cut", "__tc_dt_cut", 
+            "__pos_l1", "__pos_d0_cut", "__cl_dt_cut", "__pz_tot_min_cut"
+    };
+    
+    int nLevels = levels.length;
+    
+    IHistogram1D h_nPassingCuts = aida.histogram1D("n_events_passing_cuts", nLevels, 0, nLevels);
+    IHistogram1D h_mass[] = new IHistogram1D[nLevels];
+    IHistogram1D h_mass_tweak[] = new IHistogram1D[nLevels];
+    IHistogram1D h_cdt[] = new IHistogram1D[nLevels];
+    IHistogram1D h_eleP[] = new IHistogram1D[nLevels];
+    IHistogram1D h_posP[] = new IHistogram1D[nLevels];
+    IHistogram1D h_totP[] = new IHistogram1D[nLevels];
+    IHistogram1D h_eleChisq[] = new IHistogram1D[nLevels];
+    IHistogram1D h_posChisq[] = new IHistogram1D[nLevels];
+    IHistogram1D h_eleD0[] = new IHistogram1D[nLevels];
+    IHistogram1D h_posD0[] = new IHistogram1D[nLevels];
+    IHistogram1D h_eleClTrkDt[] = new IHistogram1D[nLevels];
+    IHistogram1D h_posClTrkDt[] = new IHistogram1D[nLevels];
+    IHistogram1D h_eleL1[] = new IHistogram1D[nLevels]; 
+    IHistogram1D h_posL1[] = new IHistogram1D[nLevels];
+    IHistogram1D h_eleL2[] = new IHistogram1D[nLevels];
+    IHistogram1D h_posL2[] = new IHistogram1D[nLevels];
+    IHistogram1D h_tarChisq[] = new IHistogram1D[nLevels];
+    
+    @Override
+    public void detectorChanged(Detector d ){
+        setupHistograms();
+    }
+    
+    void setupHistograms(){
+        
+        
+       
+       for(int i = 0; i< nLevels; i++){
+           h_mass[i] = aida.histogram1D("mass" + levels[i], 6000, 0, .3);
+           h_mass_tweak[i] = aida.histogram1D("mass_tweak" + levels[i], 6000, 0, .3);
+           h_cdt[i] = aida.histogram1D("cluster_dt" + levels[i], 100, -10, 10);
+           h_totP[i] = aida.histogram1D("total_p" + levels[i], 100, 0, 4.0);
+           h_eleP[i] = aida.histogram1D("electron_p" + levels[i], 100, 0, 3.0);
+           h_posP[i] = aida.histogram1D("positron_p" + levels[i], 100, 0, 3.0);
+           h_eleChisq[i] = aida.histogram1D("electron_chi2" + levels[i], 100, 0, 100);
+           h_posChisq[i] = aida.histogram1D("positron_chi2" + levels[i], 100, 0, 100);
+           h_eleD0[i] = aida.histogram1D("electron_d0" + levels[i], 200, -10, 10);
+           h_posD0[i] = aida.histogram1D("positron_d0" + levels[i], 200, -10, 10);
+           h_eleClTrkDt[i] = aida.histogram1D("electron_cluster_track_dt" + levels[i], 100, -50, 50);
+           h_posClTrkDt[i] = aida.histogram1D("positron_cluster_track_dt" + levels[i], 100, -50, 50);
+           h_eleL1[i] = aida.histogram1D("electron_l1" + levels[i], 2, 0, 2);
+           h_posL1[i] = aida.histogram1D("positron_l1" + levels[i], 2, 0, 2);
+           h_eleL2[i] = aida.histogram1D("electron_l2" + levels[i], 2, 0, 2);
+           h_posL2[i] = aida.histogram1D("positron_l2" + levels[i], 2, 0, 2);
+           h_tarChisq[i] = aida.histogram1D("tar_chi2" + levels[i], 100, 0, 100);
+           
+       }
+        
+    }
+    
+    /*
     // no cuts except event flags, GBL, clusters in opposite volumes, and tc match chi2 < 10.    
     // if tracks have shared hits, choose the track with the better fit chi2. (may change this criteria)
 
@@ -153,7 +204,7 @@ public class MassHistogramDriver extends Driver{
     IHistogram2D massVsPzFinal = aida.histogram2D("mass_vs_tot_pz_final", nMassBins, 0, maxMass, 100, 0, 4);
     
     IHistogram1D massRad = aida.histogram1D("mass_rad", nMassBins, 0, maxMass);
-    IHistogram1D cdtRad = aida.histogram1D("cluster_dt_rad", nCDTbins, -maxCDT, maxCDT);
+    IHistogram1D cdtRad = aida.histogram1D("cluster_dt_rad", nCDTbins, -maxCDT, maxCDT);*/
 
     /**
      * check if two tracks share hits.  If so, return the track that is "worse"
@@ -316,6 +367,18 @@ public class MassHistogramDriver extends Driver{
         v0s.removeAll(trash);
     }
 
+    private void radCut(List<ReconstructedParticle> v0s) {
+        List<ReconstructedParticle> trash = new ArrayList<ReconstructedParticle>();
+        for(ReconstructedParticle v1 : v0s){
+
+            if(v1.getMomentum().magnitude() < radThreshold)
+                trash.add(v1);
+            
+        }
+        v0s.removeAll(trash);
+    }
+    
+    
     @Override
     public void process(EventHeader event){
 
@@ -323,145 +386,91 @@ public class MassHistogramDriver extends Driver{
 
         preliminaryCleanup(v0s);
         cleanupDuplicates(v0s);
-        for(ReconstructedParticle v0 : v0s){
-            massPreliminary.fill(getMass(v0));
-            cdtPreliminary.fill(getClusterTimeDiff(v0));
-        }
+        fillHistograms(0, v0s, event);
 
-
-        //now look at the fee cut
-        for(ReconstructedParticle v0 : v0s){
-            electronPz.fill(v0.getParticles().get(ReconParticleDriver.ELECTRON).getMomentum().z());
-            positronPz.fill(v0.getParticles().get(ReconParticleDriver.POSITRON).getMomentum().z());
-
-        }
         feeCut(v0s);
-        for(ReconstructedParticle v0 : v0s){
-            massNoFee.fill(getMass(v0));
-            cdtNoFee.fill(getClusterTimeDiff(v0));
+        fillHistograms(1, v0s, event);
 
-        }
-
-        //now look at the pz tot cut
-        for(ReconstructedParticle v0 : v0s){
-            totPz.fill(v0.getMomentum().z());
-        }
+        
         pzMaxCut(v0s);
-        for(ReconstructedParticle v0 : v0s){
-            massPzCut.fill(getMass(v0));
-            cdtPzCut.fill(getClusterTimeDiff(v0));
+        fillHistograms(2, v0s, event);
 
-        }
-
-        //now look at the track chi2 cut
-        for(ReconstructedParticle v0 : v0s){
-            eleTrackChi2.fill(v0.getParticles().get(ReconParticleDriver.ELECTRON).getTracks().get(0).getChi2());
-            posTrackChi2.fill(v0.getParticles().get(ReconParticleDriver.POSITRON).getTracks().get(0).getChi2());
-        }
         trackChi2Cut(v0s);
-        for(ReconstructedParticle v0 : v0s){
-            massTrackChi2Cut.fill(getMass(v0));
-            cdtTrackChi2Cut.fill(getClusterTimeDiff(v0));
+        fillHistograms(3, v0s, event);
 
-        }
 
-        //now look at the cluster track time difference cut
-        for(ReconstructedParticle v0 : v0s){
-            double trackEleTime = TrackUtils.getTrackTime(v0.getParticles().get(ReconParticleDriver.ELECTRON).getTracks().get(0),TrackUtils.getHitToStripsTable(event),TrackUtils.getHitToRotatedTable(event));
-            double trackPosTime = TrackUtils.getTrackTime(v0.getParticles().get(ReconParticleDriver.POSITRON).getTracks().get(0),TrackUtils.getHitToStripsTable(event),TrackUtils.getHitToRotatedTable(event));
-            double clusterEleTime =  v0.getParticles().get(ReconParticleDriver.ELECTRON).getClusters().get(0).getCalorimeterHits().get(0).getTime();
-            double clusterPosTime =  v0.getParticles().get(ReconParticleDriver.POSITRON).getClusters().get(0).getCalorimeterHits().get(0).getTime();
-
-            clusterTrackDt.fill(clusterEleTime-trackEleTime);
-            clusterTrackDt.fill(clusterPosTime-trackPosTime);
-        }
         clusterTrackDTCut(v0s, event);
-        for(ReconstructedParticle v0 : v0s){
-            massClusterTrackDtCut.fill(getMass(v0));
-            cdtClusterTrackDtCut.fill(getClusterTimeDiff(v0));
-
-        }
+        fillHistograms(4, v0s, event);
+        
 
         //now do L1 cut.  
-        for(ReconstructedParticle v0 : v0s){
-            eleL1.fill(hasL1(v0.getParticles().get(ReconParticleDriver.ELECTRON).getTracks().get(0)));
-            posL1.fill(hasL1(v0.getParticles().get(ReconParticleDriver.POSITRON).getTracks().get(0)));
-            eleL2.fill(hasL2(v0.getParticles().get(ReconParticleDriver.ELECTRON).getTracks().get(0)));
-            posL2.fill(hasL2(v0.getParticles().get(ReconParticleDriver.POSITRON).getTracks().get(0)));
-
-        }
         L1L2Cut(v0s);
-        for(ReconstructedParticle v0 : v0s){
-            massL1Cut.fill(getMass(v0));
-            cdtL1Cut.fill(getClusterTimeDiff(v0));
-
-        }
+        fillHistograms(5, v0s, event);
+        
 
         //now look at the positron and electron d0
-        for(ReconstructedParticle v0 : v0s){
-            eleD0.fill(TrackUtils.getDoca(v0.getParticles().get(ReconParticleDriver.ELECTRON).getTracks().get(0)));
-            posD0.fill(TrackUtils.getDoca(v0.getParticles().get(ReconParticleDriver.POSITRON).getTracks().get(0)));
-        }
+        
         d0Cut(v0s);
-        for(ReconstructedParticle v0 : v0s){
-            massPosD0Cut.fill(getMass(v0));
-            cdtPosD0Cut.fill(getClusterTimeDiff(v0));
-
-        }
-        //now look at px total, but don't cut on it.  (I will determine the cut value later on).  
-        for(ReconstructedParticle v0 : v0s){
-            totPx.fill(v0.getMomentum().x());
-        }
-        // also look at pt, pz and pt/pz asymmetry:
-        for(ReconstructedParticle v0 : v0s){
-            ReconstructedParticle pos = v0.getParticles().get(ReconParticleDriver.POSITRON);
-            ReconstructedParticle ele = v0.getParticles().get(ReconParticleDriver.ELECTRON);
-
-            double tilt = .0305;
-            double ptPos = Math.hypot(pos.getMomentum().x()*Math.cos(tilt)-pos.getMomentum().z()*Math.sin(tilt), pos.getMomentum().y());
-            double ptEle = Math.hypot(ele.getMomentum().x()*Math.cos(tilt)-ele.getMomentum().z()*Math.sin(tilt), ele.getMomentum().y());
-            ptAsymmetry.fill((ptPos-ptEle)/(ptPos+ptEle));
-
-            double pzPos = pos.getMomentum().z();
-            double pzEle = ele.getMomentum().z();
-            pzAsymmetry.fill((pzPos-pzEle)/(pzPos+pzEle));
-
-            double ptpzPos = ptPos/pzPos;
-            double ptpzEle = ptEle/pzEle;
-            ptpzAsymmetry.fill((ptpzPos-ptpzEle)/(ptpzPos+ptpzEle));
-
-            totPzFinal.fill(v0.getMomentum().z());
-
-        }
+        fillHistograms(6, v0s, event);
 
 
-
-
-
-        //now for the final cut:  cluster dt.  
+        //cluster dt.  
         clusterDtCut(v0s);
-        for(ReconstructedParticle v0 : v0s){
-            massFinal.fill(getMass(v0));
-            cdtFinal.fill(getClusterTimeDiff(v0));
+        fillHistograms(7, v0s, event);
+        
 
-            massVsPzFinal.fill(v0.getMass(), v0.getMomentum().z());
-            if(v0.getMomentum().z()>radThreshold){
-                massRad.fill(getMass(v0));
-                cdtRad.fill(getClusterTimeDiff(v0));
-            }
-        }
-
+        radCut(v0s);
+        fillHistograms(8, v0s, event);
 
 
     }
 
-    double getMass(ReconstructedParticle v0){
+    
+
+    double getMass(ReconstructedParticle v0, boolean useBeamEnergyConstraint){
         double mass = v0.getMass();
         if(useBeamEnergyConstraint && v0.getMomentum().z()>2.306)
             mass*=  2.306/v0.getMomentum().z();
         return mass;
     }
     
+    
+    void fillHistograms(int level, List<ReconstructedParticle> v0s, EventHeader event){
+        for(ReconstructedParticle v0 : v0s){
+            ReconstructedParticle electron = v0.getParticles().get(ReconParticleDriver.ELECTRON);
+            ReconstructedParticle positron = v0.getParticles().get(ReconParticleDriver.POSITRON);
+            
+            Track eleTrack = electron.getTracks().get(0);
+            Track posTrack = positron.getTracks().get(0);
+        double trackEleTime = TrackUtils.getTrackTime(eleTrack,TrackUtils.getHitToStripsTable(event),TrackUtils.getHitToRotatedTable(event));
+        double trackPosTime = TrackUtils.getTrackTime(posTrack,TrackUtils.getHitToStripsTable(event),TrackUtils.getHitToRotatedTable(event));
+        double clusterEleTime =  electron.getClusters().get(0).getCalorimeterHits().get(0).getTime();
+        double clusterPosTime =  positron.getClusters().get(0).getCalorimeterHits().get(0).getTime();
+
+        h_eleClTrkDt[level].fill(clusterEleTime-trackEleTime-55);
+        h_posClTrkDt[level].fill(clusterPosTime-trackPosTime-55);
+        h_mass[level].fill(getMass(v0, false));
+        h_mass_tweak[level].fill(getMass(v0, true));
+        h_cdt[level].fill(getClusterTimeDiff(v0));
+
+        h_totP[level].fill(v0.getMomentum().magnitude());
+        h_eleP[level].fill(electron.getMomentum().magnitude());
+        h_posP[level].fill(positron.getMomentum().magnitude());
+        h_eleChisq[level].fill(eleTrack.getChi2());
+        h_posChisq[level].fill(posTrack.getChi2());
+        
+
+        h_eleD0[level].fill(TrackUtils.getDoca(eleTrack));
+        h_posD0[level].fill(TrackUtils.getDoca(posTrack));
+        
+        h_tarChisq[level].fill(v0.getStartVertex().getChi2());
+        
+        h_eleL1[level].fill(hasL1(eleTrack));
+        h_posL1[level].fill(hasL1(posTrack));
+        h_eleL2[level].fill(hasL2(eleTrack));
+        h_posL2[level].fill(hasL2(posTrack));
+        }
+    }
     /*private double getD0(Track track){
         double d0 =  TrackUtils.getDoca(track); 
         //make correction due to target being at -5 mm 

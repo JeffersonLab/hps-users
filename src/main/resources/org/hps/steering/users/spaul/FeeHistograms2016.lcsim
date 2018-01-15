@@ -8,7 +8,6 @@
     <execute>
         <driver name="EventMarkerDriver"/>
         <driver name="EventFlagFilter"/>
-        <driver name="TriggerFilter"/>
         
         <driver name="RawTrackerHitSensorSetup"/>
          <!-- Rerun recon particle driver-->
@@ -109,6 +108,7 @@
         <eMinFrac>.85</eMinFrac>
         <eMaxFrac>1e7</eMaxFrac>
         <folderName>85_percent</folderName>
+        <clusterTrackTimeOffset>55</clusterTrackTimeOffset>
         </driver>
         <driver name="FeeHistogramsTight" type="org.hps.users.spaul.fee.FeeHistogramDriver">
        		<binning>24
@@ -149,6 +149,7 @@
         <eMinFrac>.87</eMinFrac>
         <eMaxFrac>1e7</eMaxFrac>
         <folderName>87_percent</folderName>
+        <clusterTrackTimeOffset>55</clusterTrackTimeOffset>
         </driver>
         <driver name="FeeHistogramsLoose" type="org.hps.users.spaul.fee.FeeHistogramDriver">
        		<binning>24
@@ -189,6 +190,7 @@
         <eMinFrac>.83</eMinFrac>
         <eMaxFrac>1e7</eMaxFrac>
         <folderName>83_percent</folderName>
+        <clusterTrackTimeOffset>55</clusterTrackTimeOffset>
         </driver>
          <driver name="AidaSaveDriver" type="org.lcsim.job.AidaSaveDriver">
             <outputFileName>${outputFile}</outputFileName>    

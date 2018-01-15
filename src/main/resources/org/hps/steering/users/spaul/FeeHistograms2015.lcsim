@@ -53,13 +53,14 @@
 1 0.1550 0.1600 0.1600 0.3300 </binning>
 
         <minClustTime>40</minClustTime>
-        <maxClustTime>50</maxClustTime>
+        <maxClustTime>54</maxClustTime>
         <sspClusterTime>48</sspClusterTime>
         <useSSPcut>false</useSSPcut>
         <seedEnergyCutFrac>0</seedEnergyCutFrac>
         <eMinFrac>.85</eMinFrac>
         <eMaxFrac>1e7</eMaxFrac>
         <folderName>85_percent</folderName>
+        <clusterTrackTimeOffset>44</clusterTrackTimeOffset>
         </driver>
         <driver name="FeeHistogramsTight" type="org.hps.users.spaul.fee.FeeHistogramDriver">
        		<binning>24
@@ -89,12 +90,13 @@
 1 0.1550 0.1600 0.1600 0.3300 </binning>
 
         <minClustTime>40</minClustTime>
-        <maxClustTime>50</maxClustTime>
+        <maxClustTime>54</maxClustTime>
         <sspClusterTime>48</sspClusterTime>
         <useSSPcut>false</useSSPcut>
         <seedEnergyCutFrac>0</seedEnergyCutFrac>
         <eMinFrac>.87</eMinFrac>
         <eMaxFrac>1e7</eMaxFrac>
+        <clusterTrackTimeOffset>44</clusterTrackTimeOffset>
         <folderName>87_percent</folderName>
         </driver>
         <driver name="FeeHistogramsLoose" type="org.hps.users.spaul.fee.FeeHistogramDriver">
@@ -125,12 +127,13 @@
 1 0.1550 0.1600 0.1600 0.3300 </binning>
 
         <minClustTime>40</minClustTime>
-        <maxClustTime>50</maxClustTime>
+        <maxClustTime>54</maxClustTime>
         <sspClusterTime>48</sspClusterTime>
         <useSSPcut>false</useSSPcut>
         <seedEnergyCutFrac>0</seedEnergyCutFrac>
         <eMinFrac>.83</eMinFrac>
         <eMaxFrac>1e7</eMaxFrac>
+        <clusterTrackTimeOffset>44</clusterTrackTimeOffset>
         <folderName>83_percent</folderName>
         </driver>
          <driver name="AidaSaveDriver" type="org.lcsim.job.AidaSaveDriver">
