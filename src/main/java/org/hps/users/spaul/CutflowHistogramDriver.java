@@ -469,6 +469,7 @@ public class CutflowHistogramDriver extends Driver{
         h_posL1[level].fill(hasL1(posTrack));
         h_eleL2[level].fill(hasL2(eleTrack));
         h_posL2[level].fill(hasL2(posTrack));
+        h_nPassingCuts.fill(level);
         }
     }
     /*private double getD0(Track track){
