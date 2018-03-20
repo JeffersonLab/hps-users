@@ -24,7 +24,6 @@ import org.hps.record.svt.SvtEventHeaderChecker;
 import org.hps.record.svt.SvtEvioUtils;
 import org.hps.record.svt.SvtHeaderDataInfo;
 import org.hps.record.svt.SvtEvioExceptions.SvtEvioHeaderException;
-import org.hps.util.BasicLogFormatter;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.GenericObject;
 import org.lcsim.geometry.Detector;
@@ -36,7 +35,7 @@ import org.lcsim.util.Driver;
  */
 public class SvtHeaderAnalysisDriver extends Driver {
 
-    private final Logger logger = Logger.getLogger(SvtHeaderAnalysisDriver.class.getSimpleName());
+    private final Logger logger = Logger.getLogger(SvtHeaderAnalysisDriver.class.getPackage().getName());
     private int nEventsProcessed = 0;
     private Date eventDate = new Date(0);
     private int nEventsProcessedHeaderBad = 0;
@@ -53,8 +52,6 @@ public class SvtHeaderAnalysisDriver extends Driver {
     Map<Integer, Map<String, Integer> > exceptionCount = new HashMap<Integer, Map<String,Integer>>(); 
 
     
-
-    
     /**
      *  Default constructor
      */
@@ -69,14 +66,6 @@ public class SvtHeaderAnalysisDriver extends Driver {
     
     @Override
     protected void detectorChanged(Detector detector) {
-        
-        try {
-            FileHandler fh = new FileHandler(logFileName);
-            fh.setFormatter(new BasicLogFormatter());
-            logger.addHandler(fh);
-        } catch (SecurityException | IOException e1) {
-            e1.printStackTrace();
-        }
         
 //        final int n = SvtEvioReader.MAX_ROC_BANK_TAG+1 -  SvtEvioReader.MIN_ROC_BANK_TAG;
         
