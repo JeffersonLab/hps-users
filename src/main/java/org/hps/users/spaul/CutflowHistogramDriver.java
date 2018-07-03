@@ -19,12 +19,14 @@ import hep.aida.IHistogram2D;
 public class CutflowHistogramDriver extends Driver{
     AIDA aida = AIDA.defaultInstance();
 
-    private double goodnessPidThreshold = 5;
-    private double feeThreshold = 1.750;
-    private double pzTotThreshold = 2.760;
-    private double radThreshold = 1.4;//1.750;
-    private double trackChi2Threshold = 40;
+    private double goodnessPidThreshold = 6.1;
+    private double feeThreshold = 1.76;
+    private double pTotThreshold = 2.90;
+    private double radThreshold = 1.51;//1.750;
+    private double trackChi2Threshold = 70;
     private double trackClusterTimeDiffThresholdMean = 55;
+    private double trackClusterTimeDiffThresholdAbs = 4.4;
+    private int maxSharedHits = 3;
     public void setGoodnessPidThreshold(double goodnessPidThreshold) {
         this.goodnessPidThreshold = goodnessPidThreshold;
     }
@@ -51,19 +53,17 @@ public class CutflowHistogramDriver extends Driver{
         this.clusterTimeDiffThreshold = clusterTimeDiffThreshold;
     }
 
-    private double trackClusterTimeDiffThresholdAbs = 4.5;
 
-    private int maxSharedHits = 3;
-    
-    
+
+
     public void setRadThreshold(double val){
         radThreshold = val;
     }
-    
+
     public void setPzTotThreshold(double val){
-        pzTotThreshold = val;
+        pTotThreshold = val;
     }
-    
+
     public void setMeanClusterTrackDt(double val){
         trackClusterTimeDiffThresholdMean = val;
     }
@@ -76,7 +76,7 @@ public class CutflowHistogramDriver extends Driver{
         corrD0 = val;
     }*/
 
-    private double posD0Threshold = 1.0;
+    private double posD0Threshold = 1.07;
     private double clusterTimeDiffThreshold = 2;
 
     int nMassBins = 6000;
@@ -84,15 +84,17 @@ public class CutflowHistogramDriver extends Driver{
 
     int nCDTbins = 100;
     double maxCDT = 10;
-    
-    
-    String levels[] = {"__pre", "__fee_cut", "__pz_tot_max_cut", "__chi2_cut", "__tc_dt_cut", 
-            "__pos_l1", "__pos_d0_cut", "__cl_dt_cut", "__pz_tot_min_cut"
+
+
+    String levels[] = {"__pre", "__nsigma_cut", "__fee_cut", "__p_tot_max_cut", "__chi2_cut", "__tc_dt_cut", 
+            "__pos_l1", "__pos_d0_cut", "__cl_dt_cut", "__p_tot_min_cut"
     };
-    
+
     int nLevels = levels.length;
-    
+
     IHistogram1D h_nPassingCuts = aida.histogram1D("n_events_passing_cuts", nLevels, 0, nLevels);
+    IHistogram1D h_nsigma_ele[] = new IHistogram1D[nLevels];
+    IHistogram1D h_nsigma_pos[] = new IHistogram1D[nLevels];
     IHistogram1D h_mass[] = new IHistogram1D[nLevels];
     IHistogram1D h_mass_tweak[] = new IHistogram1D[nLevels];
     IHistogram1D h_cdt[] = new IHistogram1D[nLevels];
@@ -110,39 +112,47 @@ public class CutflowHistogramDriver extends Driver{
     IHistogram1D h_eleL2[] = new IHistogram1D[nLevels];
     IHistogram1D h_posL2[] = new IHistogram1D[nLevels];
     IHistogram1D h_tarChisq[] = new IHistogram1D[nLevels];
-    
+
+    IHistogram1D h_nV0perEvent[] = new IHistogram1D[nLevels];
+    IHistogram1D h_nSharedElectron[] = new IHistogram1D[nLevels];
+    IHistogram1D h_nSharedPositron[] = new IHistogram1D[nLevels];
+
     @Override
     public void detectorChanged(Detector d ){
         setupHistograms();
     }
-    
+
     void setupHistograms(){
-        
-        
-       
-       for(int i = 0; i< nLevels; i++){
-           h_mass[i] = aida.histogram1D("mass" + levels[i], 6000, 0, .3);
-           h_mass_tweak[i] = aida.histogram1D("mass_tweak" + levels[i], 6000, 0, .3);
-           h_cdt[i] = aida.histogram1D("cluster_dt" + levels[i], 100, -10, 10);
-           h_totP[i] = aida.histogram1D("total_p" + levels[i], 100, 0, 4.0);
-           h_eleP[i] = aida.histogram1D("electron_p" + levels[i], 100, 0, 3.0);
-           h_posP[i] = aida.histogram1D("positron_p" + levels[i], 100, 0, 3.0);
-           h_eleChisq[i] = aida.histogram1D("electron_chi2" + levels[i], 100, 0, 100);
-           h_posChisq[i] = aida.histogram1D("positron_chi2" + levels[i], 100, 0, 100);
-           h_eleD0[i] = aida.histogram1D("electron_d0" + levels[i], 200, -10, 10);
-           h_posD0[i] = aida.histogram1D("positron_d0" + levels[i], 200, -10, 10);
-           h_eleClTrkDt[i] = aida.histogram1D("electron_cluster_track_dt" + levels[i], 100, -50, 50);
-           h_posClTrkDt[i] = aida.histogram1D("positron_cluster_track_dt" + levels[i], 100, -50, 50);
-           h_eleL1[i] = aida.histogram1D("electron_l1" + levels[i], 2, 0, 2);
-           h_posL1[i] = aida.histogram1D("positron_l1" + levels[i], 2, 0, 2);
-           h_eleL2[i] = aida.histogram1D("electron_l2" + levels[i], 2, 0, 2);
-           h_posL2[i] = aida.histogram1D("positron_l2" + levels[i], 2, 0, 2);
-           h_tarChisq[i] = aida.histogram1D("tar_chi2" + levels[i], 100, 0, 100);
-           
-       }
-        
+
+
+
+        for(int i = 0; i< nLevels; i++){
+            h_mass[i] = aida.histogram1D("mass" + levels[i], 6000, 0, .3);
+            h_mass_tweak[i] = aida.histogram1D("mass_tweak" + levels[i], 6000, 0, .3);
+            h_nsigma_ele[i] = aida.histogram1D("electron_nsigma" + levels[i], 100, 0, 20);
+            h_nsigma_pos[i] = aida.histogram1D("positron_nsigma" + levels[i], 100, 0, 20);
+            h_cdt[i] = aida.histogram1D("cluster_dt" + levels[i], 100, -10, 10);
+            h_totP[i] = aida.histogram1D("total_p" + levels[i], 100, 0, 4.0);
+            h_eleP[i] = aida.histogram1D("electron_p" + levels[i], 100, 0, 3.0);
+            h_posP[i] = aida.histogram1D("positron_p" + levels[i], 100, 0, 3.0);
+            h_eleChisq[i] = aida.histogram1D("electron_chi2" + levels[i], 100, 0, 100);
+            h_posChisq[i] = aida.histogram1D("positron_chi2" + levels[i], 100, 0, 100);
+            h_eleD0[i] = aida.histogram1D("electron_d0" + levels[i], 200, -10, 10);
+            h_posD0[i] = aida.histogram1D("positron_d0" + levels[i], 200, -10, 10);
+            h_eleClTrkDt[i] = aida.histogram1D("electron_cluster_track_dt" + levels[i], 100, -50, 50);
+            h_posClTrkDt[i] = aida.histogram1D("positron_cluster_track_dt" + levels[i], 100, -50, 50);
+            h_eleL1[i] = aida.histogram1D("electron_l1" + levels[i], 2, 0, 2);
+            h_posL1[i] = aida.histogram1D("positron_l1" + levels[i], 2, 0, 2);
+            h_eleL2[i] = aida.histogram1D("electron_l2" + levels[i], 2, 0, 2);
+            h_posL2[i] = aida.histogram1D("positron_l2" + levels[i], 2, 0, 2);
+            h_tarChisq[i] = aida.histogram1D("tar_chi2" + levels[i], 200, 0, 200);
+            h_nV0perEvent[i] = aida.histogram1D("nV0" + levels[i], 20, 0, 20);
+            h_nSharedPositron[i] = aida.histogram1D("nV0_with_shared_positron" + levels[i], 20, 0, 20);
+            h_nSharedElectron[i] = aida.histogram1D("nV0_with_shared_electron" + levels[i], 20, 0, 20);
+        }
+
     }
-    
+
     /*
     // no cuts except event flags, GBL, clusters in opposite volumes, and tc match chi2 < 10.    
     // if tracks have shared hits, choose the track with the better fit chi2. (may change this criteria)
@@ -202,7 +212,7 @@ public class CutflowHistogramDriver extends Driver{
     IHistogram1D totPzFinal = aida.histogram1D("total_pz_final", 100, 0, 4.0);
 
     IHistogram2D massVsPzFinal = aida.histogram2D("mass_vs_tot_pz_final", nMassBins, 0, maxMass, 100, 0, 4);
-    
+
     IHistogram1D massRad = aida.histogram1D("mass_rad", nMassBins, 0, maxMass);
     IHistogram1D cdtRad = aida.histogram1D("cluster_dt_rad", nCDTbins, -maxCDT, maxCDT);*/
 
@@ -246,10 +256,7 @@ public class CutflowHistogramDriver extends Driver{
             else if(v1.getParticles().get(0).getClusters().get(0).getPosition()[1]
                     *v1.getParticles().get(1).getClusters().get(0).getPosition()[1] > 0)
                 trash.add(v1);
-            //match chi^2 < 10?  
-            else if(v1.getParticles().get(0).getGoodnessOfPID() > goodnessPidThreshold 
-                    || v1.getParticles().get(1).getGoodnessOfPID() > goodnessPidThreshold)
-                trash.add(v1);
+
         }
         v0s.removeAll(trash);
     }
@@ -282,7 +289,7 @@ public class CutflowHistogramDriver extends Driver{
     public void feeCut(List<ReconstructedParticle> v0s){
         List<ReconstructedParticle> trash = new ArrayList<ReconstructedParticle>();
         for(ReconstructedParticle v1 : v0s){
-            if(v1.getParticles().get(ReconParticleDriver.ELECTRON).getMomentum().z()>feeThreshold)
+            if(v1.getParticles().get(ReconParticleDriver.ELECTRON).getMomentum().magnitude()>feeThreshold)
                 trash.add(v1);
         }
         v0s.removeAll(trash);
@@ -291,10 +298,10 @@ public class CutflowHistogramDriver extends Driver{
      *  pz max cut.  
      * @param v0s
      */
-    public void pzMaxCut(List<ReconstructedParticle> v0s){
+    public void pMaxCut(List<ReconstructedParticle> v0s){
         List<ReconstructedParticle> trash = new ArrayList<ReconstructedParticle>();
         for(ReconstructedParticle v1 : v0s){
-            if(v1.getMomentum().z()>pzTotThreshold)
+            if(v1.getMomentum().magnitude()>pTotThreshold)
                 trash.add(v1);
         }
         v0s.removeAll(trash);
@@ -305,6 +312,18 @@ public class CutflowHistogramDriver extends Driver{
             double posD0 = TrackUtils.getDoca(v1.getParticles().get(ReconParticleDriver.POSITRON).getTracks().get(0));
 
             if(posD0>posD0Threshold)
+                trash.add(v1);
+
+        }
+        v0s.removeAll(trash);
+    }
+
+    public void trackClusterMatchCut(List<ReconstructedParticle> v0s){
+
+        List<ReconstructedParticle> trash = new ArrayList<ReconstructedParticle>();
+        for(ReconstructedParticle v1 : v0s){
+            if(v1.getParticles().get(0).getGoodnessOfPID() > goodnessPidThreshold 
+                    || v1.getParticles().get(1).getGoodnessOfPID() > goodnessPidThreshold)
                 trash.add(v1);
 
         }
@@ -373,12 +392,12 @@ public class CutflowHistogramDriver extends Driver{
 
             if(v1.getMomentum().magnitude() < radThreshold)
                 trash.add(v1);
-            
+
         }
         v0s.removeAll(trash);
     }
-    
-    
+
+
     @Override
     public void process(EventHeader event){
 
@@ -388,90 +407,151 @@ public class CutflowHistogramDriver extends Driver{
         cleanupDuplicates(v0s);
         fillHistograms(0, v0s, event);
 
-        feeCut(v0s);
+        trackClusterMatchCut(v0s);
         fillHistograms(1, v0s, event);
 
-        
-        pzMaxCut(v0s);
+        feeCut(v0s);
         fillHistograms(2, v0s, event);
 
-        trackChi2Cut(v0s);
+        pMaxCut(v0s);
         fillHistograms(3, v0s, event);
 
+        trackChi2Cut(v0s);
+        fillHistograms(4, v0s, event);
 
         clusterTrackDTCut(v0s, event);
-        fillHistograms(4, v0s, event);
-        
+        fillHistograms(5, v0s, event);
 
         //now do L1 cut.  
         L1L2Cut(v0s);
-        fillHistograms(5, v0s, event);
-        
-
-        //now look at the positron and electron d0
-        
-        d0Cut(v0s);
         fillHistograms(6, v0s, event);
 
+        //now look at the positron d0        
+        d0Cut(v0s);
+        fillHistograms(7, v0s, event);
 
         //cluster dt.  
         clusterDtCut(v0s);
-        fillHistograms(7, v0s, event);
-        
+        fillHistograms(8, v0s, event);
 
         radCut(v0s);
-        fillHistograms(8, v0s, event);
+        fillHistograms(9, v0s, event);
 
 
     }
 
-    
+
 
     double getMass(ReconstructedParticle v0, boolean useBeamEnergyConstraint){
         double mass = v0.getMass();
-        if(useBeamEnergyConstraint && v0.getMomentum().z()>2.306)
-            mass*=  2.306/v0.getMomentum().z();
+        if(useBeamEnergyConstraint && v0.getMomentum().magnitude()>2.306)
+            mass*=  2.306/v0.getMomentum().magnitude();
         return mass;
     }
-    
-    
+
+
     void fillHistograms(int level, List<ReconstructedParticle> v0s, EventHeader event){
         for(ReconstructedParticle v0 : v0s){
             ReconstructedParticle electron = v0.getParticles().get(ReconParticleDriver.ELECTRON);
             ReconstructedParticle positron = v0.getParticles().get(ReconParticleDriver.POSITRON);
-            
+
             Track eleTrack = electron.getTracks().get(0);
             Track posTrack = positron.getTracks().get(0);
-        double trackEleTime = TrackUtils.getTrackTime(eleTrack,TrackUtils.getHitToStripsTable(event),TrackUtils.getHitToRotatedTable(event));
-        double trackPosTime = TrackUtils.getTrackTime(posTrack,TrackUtils.getHitToStripsTable(event),TrackUtils.getHitToRotatedTable(event));
-        double clusterEleTime =  electron.getClusters().get(0).getCalorimeterHits().get(0).getTime();
-        double clusterPosTime =  positron.getClusters().get(0).getCalorimeterHits().get(0).getTime();
+            double trackEleTime = TrackUtils.getTrackTime(eleTrack,TrackUtils.getHitToStripsTable(event),TrackUtils.getHitToRotatedTable(event));
+            double trackPosTime = TrackUtils.getTrackTime(posTrack,TrackUtils.getHitToStripsTable(event),TrackUtils.getHitToRotatedTable(event));
+            double clusterEleTime =  electron.getClusters().get(0).getCalorimeterHits().get(0).getTime();
+            double clusterPosTime =  positron.getClusters().get(0).getCalorimeterHits().get(0).getTime();
 
-        h_eleClTrkDt[level].fill(clusterEleTime-trackEleTime-55);
-        h_posClTrkDt[level].fill(clusterPosTime-trackPosTime-55);
-        h_mass[level].fill(getMass(v0, false));
-        h_mass_tweak[level].fill(getMass(v0, true));
-        h_cdt[level].fill(getClusterTimeDiff(v0));
+            h_eleClTrkDt[level].fill(clusterEleTime-trackEleTime-55);
+            h_posClTrkDt[level].fill(clusterPosTime-trackPosTime-55);
+            h_mass[level].fill(getMass(v0, false));
+            h_mass_tweak[level].fill(getMass(v0, true));
+            h_cdt[level].fill(getClusterTimeDiff(v0));
 
-        h_totP[level].fill(v0.getMomentum().magnitude());
-        h_eleP[level].fill(electron.getMomentum().magnitude());
-        h_posP[level].fill(positron.getMomentum().magnitude());
-        h_eleChisq[level].fill(eleTrack.getChi2());
-        h_posChisq[level].fill(posTrack.getChi2());
-        
+            h_nsigma_ele[level].fill(electron.getGoodnessOfPID());
+            h_nsigma_pos[level].fill(positron.getGoodnessOfPID());
 
-        h_eleD0[level].fill(TrackUtils.getDoca(eleTrack));
-        h_posD0[level].fill(TrackUtils.getDoca(posTrack));
-        
-        h_tarChisq[level].fill(v0.getStartVertex().getChi2());
-        
-        h_eleL1[level].fill(hasL1(eleTrack));
-        h_posL1[level].fill(hasL1(posTrack));
-        h_eleL2[level].fill(hasL2(eleTrack));
-        h_posL2[level].fill(hasL2(posTrack));
-        h_nPassingCuts.fill(level);
+            h_totP[level].fill(v0.getMomentum().magnitude());
+            h_eleP[level].fill(electron.getMomentum().magnitude());
+            h_posP[level].fill(positron.getMomentum().magnitude());
+            h_eleChisq[level].fill(eleTrack.getChi2());
+            h_posChisq[level].fill(posTrack.getChi2());
+
+
+            h_eleD0[level].fill(TrackUtils.getDoca(eleTrack));
+            h_posD0[level].fill(TrackUtils.getDoca(posTrack));
+
+            h_tarChisq[level].fill(v0.getStartVertex().getChi2());
+
+            h_eleL1[level].fill(hasL1(eleTrack));
+            h_posL1[level].fill(hasL1(posTrack));
+            h_eleL2[level].fill(hasL2(eleTrack));
+            h_posL2[level].fill(hasL2(posTrack));
+            h_nPassingCuts.fill(level);
         }
+
+        h_nV0perEvent[level].fill(v0s.size());
+
+        int nSharedElectron = getNSharedElectron(v0s);
+        h_nSharedElectron[level].fill(nSharedElectron);
+
+        int nSharedPositron = getNSharedPositron(v0s, level == nLevels -1);
+        h_nSharedPositron[level].fill(nSharedPositron);
     }
+
+    private int getNSharedElectron(List<ReconstructedParticle> v0s) {
+        int nSharedV0 = 0;
+        for(ReconstructedParticle v1 : v0s){
+            for(ReconstructedParticle v2 : v0s){
+                if(v1 == v2)
+                    continue;
+                Track e1 = v1.getParticles().get(0).getTracks().get(0);
+                Track e2 = v2.getParticles().get(0).getTracks().get(0);
+                if(e1 == e2){
+                    nSharedV0++;
+                }
+            }
+        }
+
+        if(nSharedV0 != 0){
+
+        }
+        return nSharedV0;
+    }
+    private int getNSharedPositron(List<ReconstructedParticle> v0s, boolean debug) {
+        int nSharedV0 = 0;
+        for(ReconstructedParticle v1 : v0s){
+            for(ReconstructedParticle v2 : v0s){
+                if(v1 == v2)
+                    continue;
+                Track e1 = v1.getParticles().get(0).getTracks().get(0);
+                Track e2 = v2.getParticles().get(0).getTracks().get(0);
+                Track p1 = v1.getParticles().get(1).getTracks().get(0);
+                Track p2 = v2.getParticles().get(1).getTracks().get(0);
+                if(p2 == p1){
+                    nSharedV0++;
+                    if(debug && e1.getChi2() > e2.getChi2()){
+                        System.out.println("\nShared positron");
+                        System.out.println(v1.getParticles().get(1).getMomentum().magnitude());
+                        System.out.println("electron 1");
+                        System.out.println(v1.getParticles().get(0).getMomentum().magnitude());
+                        System.out.println(v1.getMass());
+                        System.out.println("electron 2");
+                        System.out.println(v2.getParticles().get(0).getMomentum().magnitude());
+                        System.out.println(v2.getMass());
+                        System.out.println("vtx chi2 1");
+                        System.out.println(v1.getStartVertex().getChi2());
+                        System.out.println("vtx chi2 2");
+                        System.out.println(v2.getStartVertex().getChi2());
+                    }
+                }
+            }
+        }
+
+
+        return nSharedV0;
+    }
+
     /*private double getD0(Track track){
         double d0 =  TrackUtils.getDoca(track); 
         //make correction due to target being at -5 mm 

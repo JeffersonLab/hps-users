@@ -6,7 +6,7 @@
         <printDriversDetailed>true</printDriversDetailed>
     </control>
     <execute>
-        <driver name="EventMarkerDriver"/>
+        <!-- <driver name="EventMarkerDriver"/> -->
         <driver name="RawTrackerHitSensorSetup"/>
          <driver name="TriggerFilter"/>
          <!-- <driver name="RewriteFlagsDriver"/> -->
@@ -31,7 +31,7 @@
         <driver name="TriggerFilter" type="org.hps.recon.filtering.Pair1TriggerFilterDriver"/>
         <!-- <driver name="RewriteFlagsDriver" type = "org.hps.users.spaul.RewriteFlagsDriver" /> -->
         
-        <driver name="TrackTweakDriver"    type="org.hps.recon.tracking.TrackTweakDriver" >
+        <!-- <driver name="TrackTweakDriver"    type="org.hps.recon.tracking.TrackTweakDriver" >
             <topOmegaCorrection>0</topOmegaCorrection>
             <botOmegaCorrection>0</botOmegaCorrection>
             <topLambdaCorrection>6e-4</topLambdaCorrection>
@@ -66,7 +66,7 @@
             <trackCollectionNames>GBLTracks</trackCollectionNames>
             <disablePID>false</disablePID>
             <beamPositionZ>3.74</beamPositionZ>
-        </driver>
+        </driver>-->
         
         <driver name="EventFlagFilter" type="org.hps.recon.filtering.EventFlagFilter">
         	<!-- All flags except for the latency flag -->
