@@ -8,17 +8,18 @@
 
 package org.hps.users.mrsolt;
 
+import hep.aida.IHistogram1D;
+import hep.aida.IHistogram2D;
+import hep.aida.ITree;
+import hep.physics.vec.Hep3Vector;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import hep.aida.IHistogram1D;
-import hep.aida.IHistogram2D;
-import hep.aida.ITree;
-import hep.physics.vec.Hep3Vector;
-
+import org.apache.commons.math3.util.Pair;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.MCParticle;
 import org.lcsim.event.SimCalorimeterHit;
@@ -26,7 +27,6 @@ import org.lcsim.event.SimTrackerHit;
 import org.lcsim.geometry.Detector;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
-import org.apache.commons.math3.util.Pair;
 import org.hps.analysis.MC.MCFullDetectorTruth;
 
 public class SimpAcceptance extends Driver {

@@ -11,14 +11,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.hps.analysis.trigger.util.TriggerDataUtils;
 import org.hps.evio.SvtEvioReader;
 import org.hps.record.svt.SvtEvioUtils;
-import org.hps.util.BasicLogFormatter;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.GenericObject;
 import org.lcsim.geometry.Detector;
@@ -34,7 +32,7 @@ public class SvtOldHeaderAnalysisDriver extends Driver {
     private final AIDA aida = AIDA.defaultInstance();
     
     private final String HeaderCollectionName = "SvtHeaders"; 
-    private final Logger LOGGER = Logger.getLogger(SvtOldHeaderAnalysisDriver.class.getSimpleName());
+    private final Logger LOGGER = Logger.getLogger(SvtOldHeaderAnalysisDriver.class.getPackage().getName());
     private int nEventsProcessed = 0;
     private Date eventDate = new Date(0);
     private IHistogram2D rceSyncErrorCount;
@@ -73,15 +71,6 @@ public class SvtOldHeaderAnalysisDriver extends Driver {
     
     @Override
     protected void detectorChanged(Detector detector) {
-        
-        FileHandler fh;
-        try {
-            fh = new FileHandler(logFileName);
-            LOGGER.addHandler(fh);
-            fh.setFormatter(new BasicLogFormatter());
-        } catch (SecurityException | IOException e1) {
-            e1.printStackTrace();
-        }
         
         plotter = aida.analysisFactory().createPlotterFactory().create("rceSyncError");
         plotter.createRegions(2, 2);

@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.hps.util.BasicLogFormatter;
 import org.lcsim.event.EventHeader;
 import org.lcsim.util.Driver;
 import org.lcsim.util.log.LogUtil;
@@ -18,7 +17,7 @@ import org.lcsim.util.log.LogUtil;
  */
 public class SvtHeaderMetaDataReaderDriver extends Driver {
     
-    private static Logger logger = LogUtil.create(SvtHeaderMetaDataReaderDriver.class.getSimpleName(), new BasicLogFormatter(), Level.INFO);
+    private static Logger logger = Logger.getLogger(SvtHeaderMetaDataReaderDriver.class.getPackage().getName());
 
     /**
      * 
