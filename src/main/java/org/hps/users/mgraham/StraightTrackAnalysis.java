@@ -27,7 +27,7 @@ public class StraightTrackAnalysis extends Driver {
     protected AIDA aida = AIDA.defaultInstance();
     private String mcSvtHitsName = "TrackerHits";
 //    private String rawHitsName = "RawTrackerHitMaker_RawTrackerHits";
-      private String rawHitsName = "SVTRawTrackerHits";
+    private String rawHitsName = "SVTRawTrackerHits";
     private String clustersName = "StripClusterer_SiTrackerHitStrip1D";
     private final String helicalTrackMCRelationsCollectionName = "HelicalTrackMCRelations";
     private final String helicalTrackHitRelationsCollectionName = "HelicalTrackHitRelations";
@@ -37,10 +37,10 @@ public class StraightTrackAnalysis extends Driver {
 
     int nevents = 0;
 
-    public void setTrackCollectionName(String name){
-        this.trackCollectionName=name;
+    public void setTrackCollectionName(String name) {
+        this.trackCollectionName = name;
     }
-    
+
     public void detectorChanged(Detector detector) {
         aida.tree().cd("/");
         IHistogram1D nSimHits = aida.histogram1D("Number of SVT Sim Hits", 25, 0, 25.0);
@@ -89,21 +89,23 @@ public class StraightTrackAnalysis extends Driver {
         //make some maps and relation tables        
         Map<Track, TrackAnalysis> tkanalMap = new HashMap<Track, TrackAnalysis>();
         RelationalTable hittomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
-        List<LCRelation> mcrelations = event.get(LCRelation.class, helicalTrackMCRelationsCollectionName);
-        for (LCRelation relation : mcrelations)
-            if (relation != null && relation.getFrom() != null && relation.getTo() != null)
-                hittomc.add(relation.getFrom(), relation.getTo());
-
+        if (event.hasCollection(LCRelation.class, helicalTrackMCRelationsCollectionName)) {
+            List<LCRelation> mcrelations = event.get(LCRelation.class, helicalTrackMCRelationsCollectionName);
+            if (mcrelations != null)
+                for (LCRelation relation : mcrelations)
+                    if (relation != null && relation.getFrom() != null && relation.getTo() != null)
+                        hittomc.add(relation.getFrom(), relation.getTo());
+        }
         System.out.println("Size of hittomc collection " + hittomc.size());
         RelationalTable mcHittomcP = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
         //  Get the collections of SimTrackerHits
         List<List<SimTrackerHit>> simcols = event.get(SimTrackerHit.class);
         //  Loop over the SimTrackerHits and fill in the relational table
-        for (List<SimTrackerHit> simlist : simcols)
-            for (SimTrackerHit simhit : simlist)
-                if (simhit.getMCParticle() != null)
-                    mcHittomcP.add(simhit, simhit.getMCParticle());
-
+        if (simcols != null)
+            for (List<SimTrackerHit> simlist : simcols)
+                for (SimTrackerHit simhit : simlist)
+                    if (simhit.getMCParticle() != null)
+                        mcHittomcP.add(simhit, simhit.getMCParticle());
         RelationalTable trktomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
         RelationalTable rawtomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
         if (event.hasCollection(LCRelation.class, "SVTTrueHitRelations")) {
