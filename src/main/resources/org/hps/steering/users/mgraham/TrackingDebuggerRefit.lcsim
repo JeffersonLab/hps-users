@@ -53,20 +53,22 @@
         <driver name="GBLRefitterDriver" /> 
         <driver name="TrackDataDriver" />
         <driver name="ReconParticleDriver" />   
-        <driver name="TrackingMonitoring"/>  
+<!--        <driver name="TrackingMonitoring"/>   -->
 <!--        <driver name="TrackDebugger"/>    -->
-        <driver name="VertexDebugger"/>    
-        <driver name="AidaSaveDriver"/>
-         <driver name="LCIOWriter"/>
+<!--         <driver name="VertexDebugger"/>    --> 
+<!--        <driver name="AidaSaveDriver"/> --> 
+         <driver name="VertexDebugTuple"/>   
+<!--         <driver name="LCIOWriter"/> -->
         <driver name="CleanupDriver"/>
     </execute>    
     <drivers>    
-        <driver name="PreCleanupDriver" type="org.hps.users.mgraham.ReadoutCleanupDriver">
-            <collectionNames>EcalCalHits EcalClusters EcalClustersCorr FinalStateParticles UnconstrainedMollerCandidates UnconstrainedMollerVertices UnconstrainedV0Candidates UnconstrainedV0Vertices TargetConstrainedMollerCandidates TargetConstrainedMollerVertices TargetConstrainedV0Candidates TargetConstrainedV0Vertices BeamspotConstrainedMollerCandidates BeamspotConstrainedMollerVertices BeamspotConstrainedV0Candidates BeamspotConstrainedV0Vertices GBLKinkData GBLKinkDataRelations MatchedToGBLTrackRelations HelicalTrackHits HelicalTrackHitRelations MatchedTracks GBLTracks MatchedToGBLTrackRelations PartialTracks RotatedHelicalTrackHits RotatedHelicalTrackHitRelations SVTFittedRawTrackerHits  SVTShapeFitParameters StripClusterer_SiTrackerHitStrip1D TrackData TrackDataRelations TrackResiduals TrackResidualsRelations</collectionNames>
+        <driver name="PreCleanupDriver" type="org.hps.analysis.dataquality.ReadoutCleanupDriver">
+      <!--      <collectionNames>EcalCalHits EcalClusters EcalClustersCorr FinalStateParticles UnconstrainedMollerCandidates UnconstrainedMollerVertices UnconstrainedV0Candidates UnconstrainedV0Vertices TargetConstrainedMollerCandidates TargetConstrainedMollerVertices TargetConstrainedV0Candidates TargetConstrainedV0Vertices BeamspotConstrainedMollerCandidates BeamspotConstrainedMollerVertices BeamspotConstrainedV0Candidates BeamspotConstrainedV0Vertices GBLKinkData GBLKinkDataRelations MatchedToGBLTrackRelations HelicalTrackHits HelicalTrackHitRelations MatchedTracks GBLTracks MatchedToGBLTrackRelations PartialTracks RotatedHelicalTrackHits RotatedHelicalTrackHitRelations SVTFittedRawTrackerHits  SVTShapeFitParameters StripClusterer_SiTrackerHitStrip1D TrackData TrackDataRelations TrackResiduals TrackResidualsRelations</collectionNames>  -->
+            <collectionNames>EcalCalHits EcalClusters EcalClustersCorr FinalStateParticles UnconstrainedMollerCandidates UnconstrainedMollerVertices UnconstrainedV0Candidates UnconstrainedV0Vertices TargetConstrainedMollerCandidates TargetConstrainedMollerVertices TargetConstrainedV0Candidates TargetConstrainedV0Vertices BeamspotConstrainedMollerCandidates BeamspotConstrainedMollerVertices BeamspotConstrainedV0Candidates BeamspotConstrainedV0Vertices GBLKinkData GBLKinkDataRelations MatchedToGBLTrackRelations HelicalTrackHits HelicalTrackHitRelations MatchedTracks GBLTracks MatchedToGBLTrackRelations  RotatedHelicalTrackHits RotatedHelicalTrackHitRelations SVTFittedRawTrackerHits  SVTShapeFitParameters StripClusterer_SiTrackerHitStrip1D TrackData TrackDataRelations TrackResiduals TrackResidualsRelations</collectionNames>
         </driver>
 
         <driver name="EventMarkerDriver" type="org.lcsim.job.EventMarkerDriver">
-            <eventInterval>1000</eventInterval>
+            <eventInterval>1</eventInterval>
         </driver> 
 
         <!-- Ecal reconstruction drivers -->
@@ -168,7 +170,7 @@
         </driver>  -->
 
 
-       <driver name="VertexDebugger" type="org.hps.users.mgraham.VertexDebugger">
+       <driver name="VertexDebugger" type="org.hps.analysis.vertex.VertexDebugger">
             <triggerType>pairs1</triggerType>
             <outputFilePath>${outputFile}.slcio</outputFilePath>
 	    <debug>true</debug>
@@ -184,6 +186,12 @@
         <driver name="CleanupDriver" type="org.lcsim.recon.tracking.digitization.sisim.config.ReadoutCleanupDriver"/>
         <driver name="AidaSaveDriver" type="org.lcsim.job.AidaSaveDriver">
             <outputFileName>${outputFile}.root</outputFileName>
-        </driver>       
+        </driver>      
+
+	<driver name="VertexDebugTuple" type="org.hps.analysis.tuple.VertexDebugTupleDriver">
+            <triggerType>all</triggerType>
+	    <debug>true</debug>
+            <tupleFile>${outputFile}_tri.txt</tupleFile>
+        </driver>
     </drivers>
 </lcsim>
