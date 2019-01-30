@@ -45,14 +45,19 @@ public class VZPlots extends Driver {
     IHistogram2D uncVZ_eleTrackChisq; 
     IHistogram2D uncVZ_posTrackChisq; 
     
+    IHistogram1D bscVZ;
+    IHistogram1D bscV0prob;
+    IHistogram2D bscVZ_bscV0prob;
+    
     //Histogram Settings
-    double minVZ = 0;
+    double minVZ = -40;
     double maxVZ = 100;
-    double maxV0prob = 0.01;
+    double maxV0prob = 1.0;
     int nBins = 100;
     
     //Collection Strings
     private String unconstrainedV0CandidatesColName = "UnconstrainedV0Candidates";
+    private String bsconstrainedV0CandidatesColName = "BeamspotConstrainedV0Candidates";
     
     //Configurable Variables
     boolean isMC = false;
@@ -87,12 +92,17 @@ public class VZPlots extends Driver {
         uncVZ_uncV0prob = aida.histogram2D("Reconstructed Z vs Vertex Proability", nBins, 0, maxV0prob, nBins, minVZ, maxVZ);
         uncVZ_eleTrackChisq = aida.histogram2D("Reconstructed Z vs Electron Track Chisq", nBins, 0, 100, nBins, minVZ, maxVZ);
         uncVZ_posTrackChisq = aida.histogram2D("Reconstructed Z vs Positron Track Chisq", nBins, 0, 100, nBins, minVZ, maxVZ);
+        
+        bscVZ = aida.histogram1D("Bsc Reconstructed Z", nBins, minVZ, maxVZ);
+        bscV0prob = aida.histogram1D("Bsc Vertex Probability", nBins, 0, maxV0prob);
+        bscVZ_bscV0prob = aida.histogram2D("Bsc Reconstructed Z vs Vertex Proability", nBins, 0, maxV0prob, nBins, minVZ, maxVZ);
     }
 
     public void process(EventHeader event){
         aida.tree().cd("/");	
         
         List<ReconstructedParticle> unConstrainedV0List = event.get(ReconstructedParticle.class, unconstrainedV0CandidatesColName);
+        List<ReconstructedParticle> bsConstrainedV0List = event.get(ReconstructedParticle.class, bsconstrainedV0CandidatesColName);
         
         for(ReconstructedParticle v0 : unConstrainedV0List){
             Hep3Vector v0Pos = v0.getStartVertex().getPosition();
@@ -109,6 +119,15 @@ public class VZPlots extends Driver {
             uncVZ_uncV0prob.fill(v0prob,v0Pos.z());
             uncVZ_eleTrackChisq.fill(eleTrkChisq,v0Pos.z());
             uncVZ_posTrackChisq.fill(posTrkChisq,v0Pos.z());
+        }
+        
+        for(ReconstructedParticle v0 : bsConstrainedV0List){
+            Hep3Vector v0Pos = v0.getStartVertex().getPosition();
+            double v0prob = v0.getStartVertex().getProbability();
+            
+            bscVZ.fill(v0Pos.z());
+            bscV0prob.fill(v0prob);
+            bscVZ_bscV0prob.fill(v0prob,v0Pos.z());
         }
     }
 
