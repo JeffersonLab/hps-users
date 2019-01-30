@@ -10,7 +10,7 @@
             <eventInterval>1000</eventInterval>
         </driver>
         <driver name="V0Plots" type="org.hps.users.mrsolt.VZPlots">
-            <maxV0prob>0.0001</maxV0prob>
+            <maxV0prob>1.0</maxV0prob>
         </driver>
         <driver name="LCIOWriter" type="org.lcsim.util.loop.LCIODriver">
             <outputFilePath>${outputFile}.slcio</outputFilePath>
