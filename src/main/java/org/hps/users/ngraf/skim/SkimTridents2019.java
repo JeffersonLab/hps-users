@@ -100,9 +100,9 @@ public class SkimTridents2019 extends Driver {
                             Track ele2Track = electrons.get(1).getTracks().get(0);
                             double ele2TrackTime = TrackData.getTrackTime(TrackData.getTrackData(event, ele2Track));
                             // before cuts
-                            aida.histogram1D("delta track time ele1 ele2 before time cuts", 50, -10., 10.).fill(ele1TrackTime - ele2TrackTime);
-                            aida.histogram1D("delta track time ele1 pos1 before time cuts", 50, -10., 10.).fill(ele1TrackTime - posTrackTime);
-                            aida.histogram1D("delta track time ele2 pos1 before time cuts", 50, -10., 10.).fill(ele2TrackTime - posTrackTime);
+                            aida.histogram1D("delta track time ele1 ele2 before time cuts", 50, -5., 5.).fill(ele1TrackTime - ele2TrackTime);
+                            aida.histogram1D("delta track time ele1 pos1 before time cuts", 50, -5., 5.).fill(ele1TrackTime - posTrackTime);
+                            aida.histogram1D("delta track time ele2 pos1 before time cuts", 50, -5., 5.).fill(ele2TrackTime - posTrackTime);
 
                             double dt1 = ele1TrackTime - ele2TrackTime;
                             double dt2 = ele1TrackTime - posTrackTime;
@@ -110,9 +110,9 @@ public class SkimTridents2019 extends Driver {
                             // require all three tracks to be in time
                             if (abs(dt1) < trackDeltaTimeCut && abs(dt2) < trackDeltaTimeCut && abs(dt3) < trackDeltaTimeCut) {
                                 aida.histogram1D("trident energy after track timing cuts", 100, 0.0, 10.).fill(trident.t());
-                                aida.histogram1D("delta track time ele1 ele2 after time cuts", 50, -10., 10.).fill(ele1TrackTime - ele2TrackTime);
-                                aida.histogram1D("delta track time ele1 pos1 after time cuts", 50, -10., 10.).fill(ele1TrackTime - posTrackTime);
-                                aida.histogram1D("delta track time ele2 pos1 after time cuts", 50, -10., 10.).fill(ele2TrackTime - posTrackTime);
+                                aida.histogram1D("delta track time ele1 ele2 after time cuts", 50, -5., 5.).fill(ele1TrackTime - ele2TrackTime);
+                                aida.histogram1D("delta track time ele1 pos after time cuts", 50, -5., 5.).fill(ele1TrackTime - posTrackTime);
+                                aida.histogram1D("delta track time ele2 pos after time cuts", 50, -5., 5.).fill(ele2TrackTime - posTrackTime);
                                 aida.histogram1D("positron track time - cluster time", 100, -50., -30.).fill(posTrackTime - posClusTime);
                                 aida.histogram1D(positorb + "positron track time - cluster time", 100, -50., -30.).fill(posTrackTime - posClusTime);
                                 double dc1 = 0.;  //positron electron1
@@ -127,7 +127,7 @@ public class SkimTridents2019 extends Driver {
                                     electronClusters.add(c);
                                     dc1 = posClusTime - ele1ClusTime;
                                     aida.histogram1D("electron1 track time - cluster time", 100, -50., -30.).fill(ele1TrackTime - ele1ClusTime);
-                                    aida.histogram1D("positron cluster time - electron1 cluster time", 50, -5., 5.).fill(posClusTime - ele1ClusTime);
+                                    aida.histogram1D("delta cluster time ele1 pos", 50, -5., 5.).fill(ele1ClusTime - posClusTime);
                                 }
                                 if (!electrons.get(1).getClusters().isEmpty()) {
                                     Cluster c = electrons.get(1).getClusters().get(0);
@@ -135,13 +135,13 @@ public class SkimTridents2019 extends Driver {
                                     electronClusters.add(c);
                                     dc2 = posClusTime - ele2ClusTime;
                                     aida.histogram1D("electron2 track time - cluster time", 100, -50., -30.).fill(ele2TrackTime - ele2ClusTime);
-                                    aida.histogram1D("positron cluster time - electron2 cluster time", 50, -5., 5.).fill(posClusTime - ele2ClusTime);
+                                    aida.histogram1D("delta cluster time ele2 pos", 50, -5., 5.).fill(ele2ClusTime - posClusTime);
                                 }
                                 // require at least one of the electrons to have a cluster?
                                 int nClusters = electronClusters.size();
                                 if (nClusters == 2) {
                                     dc3 = ele1ClusTime - ele2ClusTime;
-                                    aida.histogram1D("electron1 cluster time - electron2 cluster time", 50, -5., 5.).fill(ele1ClusTime - ele2ClusTime);
+                                    aida.histogram1D("delta cluster time ele1 ele2", 50, -5., 5.).fill(ele1ClusTime - ele2ClusTime);
                                 }
                                 aida.histogram1D("trident energy after track timing cuts " + nClusters + " electron clusters", 100, 0.0, 10.).fill(trident.t());
                                 // require clusters to be in time...
@@ -153,6 +153,7 @@ public class SkimTridents2019 extends Driver {
                                     // keep this event
                                     if (nClusters >= minNumberOfElectronsWithClusters) {
                                         skipEvent = false;
+                                        aida.histogram1D("good trident run number", 750, 10000, 10750).fill(event.getRunNumber());
                                     }
                                 }
                             }
