@@ -19,7 +19,7 @@ public class SkimTwoFiducialEcalClusters2019 extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
     private int _numberOfEventsWritten = 0;
-    double _esumCut = 3.0;
+    double _esumCut = 3.5;
     private int _numberOfEventsSelected = 0;
 
     protected void process(EventHeader event) {
@@ -136,5 +136,9 @@ public class SkimTwoFiducialEcalClusters2019 extends Driver {
 
         // If all checks fail, the cluster is in the fiducial region.
         return true;
+    }
+
+    public void setEsumCut(double d) {
+        _esumCut = d;
     }
 }
