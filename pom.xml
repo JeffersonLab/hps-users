@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.hps</groupId>
     <artifactId>hps-java</artifactId>
-    <version>4.1-SNAPSHOT</version>
+    <version>5.1-SNAPSHOT</version>
   </parent>
   <properties>
     <checkstyle.skip>true</checkstyle.skip>
@@ -64,7 +64,19 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>      
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/org/hps/users/mgraham/PropXYXY_Test.java</exclude>
+            <exclude>**/org/hps/users/spaul/SvtChargeIntegrator.java</exclude>
+            <exclude>**/org/hps/users/mgraham/alignment/HPSStrips.java</exclude>
+            <exclude>**/org/hps/users/ngraf/tracking/DetectorBuilder.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>    
     </plugins>
   </build>
 </project>
