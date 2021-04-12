@@ -35,6 +35,7 @@ public class SkimTwoFiducialEcalClusters2019 extends Driver {
             double e1 = c1.getEnergy();
             Hep3Vector pos1 = new BasicHep3Vector(c1.getPosition());
             double t1 = ClusterUtilities.getSeedHitTime(c1);
+
             Cluster c2 = ecalClusters.get(1);
             double e2 = c2.getEnergy();
             double t2 = ClusterUtilities.getSeedHitTime(c2);
@@ -74,6 +75,14 @@ public class SkimTwoFiducialEcalClusters2019 extends Driver {
                             aida.histogram2D("two fiducial opposite esum > " + _esumCut + " cluster2 x vs y", 320,
                                     -270.0, 370.0, 90, -90.0, 90.0).fill(pos2.x(), pos2.y());
                             aida.histogram1D("cluster delta time", 100, -5., 5.).fill(deltaT);
+                            CalorimeterHit seed = c1.getCalorimeterHits().get(0);
+                            int ix = seed.getIdentifierFieldValue("ix");
+                            int iy = seed.getIdentifierFieldValue("iy");
+                            aida.histogram2D("cluster1 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                            seed = c2.getCalorimeterHits().get(0);
+                            ix = seed.getIdentifierFieldValue("ix");
+                            iy = seed.getIdentifierFieldValue("iy");
+                            aida.histogram2D("cluster2 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
                         }
                         skipEvent = false;
                         if (!e1IsFiducial) {
