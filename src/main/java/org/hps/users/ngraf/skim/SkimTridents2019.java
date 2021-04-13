@@ -142,6 +142,12 @@ public class SkimTridents2019 extends Driver {
                                 if (nClusters == 2) {
                                     dc3 = ele1ClusTime - ele2ClusTime;
                                     aida.histogram1D("delta cluster time ele1 ele2", 50, -5., 5.).fill(ele1ClusTime - ele2ClusTime);
+                                    aida.histogram1D("ele1 cluster energy", 100, 0., 5.).fill(electrons.get(0).getClusters().get(0).getEnergy());
+                                    aida.histogram1D("ele2 cluster energy", 100, 0., 5.).fill(electrons.get(1).getClusters().get(0).getEnergy());
+                                    aida.histogram1D("pos cluster energy", 100, 0., 5.).fill(positrons.get(0).getClusters().get(0).getEnergy());
+                                    aida.histogram2D("ele1 cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(electrons.get(0).getClusters().get(0).getPosition()[0], electrons.get(0).getClusters().get(0).getPosition()[1]);
+                                    aida.histogram2D("ele2 cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(electrons.get(1).getClusters().get(0).getPosition()[0], electrons.get(1).getClusters().get(0).getPosition()[1]);
+                                    aida.histogram2D("pos cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(positrons.get(0).getClusters().get(0).getPosition()[0], positrons.get(0).getClusters().get(0).getPosition()[1]);
                                 }
                                 aida.histogram1D("trident energy after track timing cuts " + nClusters + " electron clusters", 100, 0.0, 10.).fill(trident.t());
                                 // require clusters to be in time...
