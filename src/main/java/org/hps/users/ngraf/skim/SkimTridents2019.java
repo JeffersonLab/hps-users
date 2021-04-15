@@ -142,9 +142,16 @@ public class SkimTridents2019 extends Driver {
                                 if (nClusters == 2) {
                                     dc3 = ele1ClusTime - ele2ClusTime;
                                     aida.histogram1D("delta cluster time ele1 ele2", 50, -5., 5.).fill(ele1ClusTime - ele2ClusTime);
-                                    aida.histogram1D("ele1 cluster energy", 100, 0., 5.).fill(electrons.get(0).getClusters().get(0).getEnergy());
-                                    aida.histogram1D("ele2 cluster energy", 100, 0., 5.).fill(electrons.get(1).getClusters().get(0).getEnergy());
-                                    aida.histogram1D("pos cluster energy", 100, 0., 5.).fill(positrons.get(0).getClusters().get(0).getEnergy());
+                                    double ele1e = electrons.get(0).getClusters().get(0).getEnergy();
+                                    double ele2e = electrons.get(1).getClusters().get(0).getEnergy();
+                                    double pose = positrons.get(0).getClusters().get(0).getEnergy();
+                                    aida.histogram1D("ele1 cluster energy", 100, 0., 5.).fill(ele1e);
+                                    aida.histogram1D("ele2 cluster energy", 100, 0., 5.).fill(ele2e);
+                                    aida.histogram1D("pos cluster energy", 100, 0., 5.).fill(pose);
+                                    aida.histogram2D("ele1 vs ele2 cluster energy", 100, 0., 3., 100, 0., 3.).fill(ele1e, ele2e);
+                                    aida.histogram2D("ele1 vs pose cluster energy", 100, 0., 3., 100, 0., 3.).fill(ele1e, pose);
+                                    aida.histogram2D("ele2 vs pose cluster energy", 100, 0., 3., 100, 0., 3.).fill(ele2e, pose);
+                                    
                                     aida.histogram2D("ele1 cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(electrons.get(0).getClusters().get(0).getPosition()[0], electrons.get(0).getClusters().get(0).getPosition()[1]);
                                     aida.histogram2D("ele2 cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(electrons.get(1).getClusters().get(0).getPosition()[0], electrons.get(1).getClusters().get(0).getPosition()[1]);
                                     aida.histogram2D("pos cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(positrons.get(0).getClusters().get(0).getPosition()[0], positrons.get(0).getClusters().get(0).getPosition()[1]);
