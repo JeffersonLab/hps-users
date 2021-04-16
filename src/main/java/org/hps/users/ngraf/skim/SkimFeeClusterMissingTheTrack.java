@@ -33,7 +33,13 @@ public class SkimFeeClusterMissingTheTrack extends Driver {
                 aida.histogram2D("cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
                 //           aida.histogram1D(ix + " " + iy + " cluster energy", 100, 0., 5.0).fill(c.getEnergy());
                 aida.histogram1D(topOrBottom + " cluster energy", 100, 0., 5.0).fill(c.getEnergy());
+                skipEvent = false;
             }
+        }
+        if (skipEvent) {
+            throw new Driver.NextEventException();
+        } else {
+            _numberOfEventsSelected++;
         }
     }
 
