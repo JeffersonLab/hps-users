@@ -87,9 +87,14 @@ public class SkimV0mumu2019 extends Driver {
                         int posIY = posClus.getCalorimeterHits().get(0).getIdentifierFieldValue("iy");
 
                         // in time
-                        double p1Time = ClusterUtilities.getSeedHitTime(negClus);
-                        double p2Time = ClusterUtilities.getSeedHitTime(posClus);
-                        double deltaTime = p1Time - p2Time;
+                        double negTime = ClusterUtilities.getSeedHitTime(negClus);
+                        double posTime = ClusterUtilities.getSeedHitTime(posClus);
+                        double deltaTime = negTime - posTime;
+                        double topMinusBottomTime = deltaTime;
+                        if (negClus.getPosition()[1] < 0) {
+                            topMinusBottomTime = -deltaTime;
+                        }
+                        aida.histogram1D("top - bottom cluster delta time", 100, -5., 5.).fill(deltaTime);
                         aida.histogram1D("cluster pair delta time", 100, -5., 5.).fill(deltaTime);
                         double negE = negClus.getEnergy();
                         double posE = posClus.getEnergy();
@@ -162,7 +167,9 @@ public class SkimV0mumu2019 extends Driver {
                                 Momentum4Vector kvec2 = new Momentum4Vector(p2[0], p2[1], p2[2], mu2);
                                 Lorentz4Vector mumusum = kvec1.plus(kvec2);
                                 double mumumass = mumusum.mass();
-                                aida.histogram1D("v0 mu+mu- mass " + v0type, 50, 0., 0.5).fill(mumumass);
+                                aida.histogram1D("v0 mu+mu- mass " + v0type, 100, 0., 1.0).fill(mumumass);
+                                aida.histogram1D("v0 mu+mu- high mass " + v0type, 100, 0.275, 1.0).fill(mumumass);
+
                                 skipEvent = false;
                             }
                             // define e+e- sample...
