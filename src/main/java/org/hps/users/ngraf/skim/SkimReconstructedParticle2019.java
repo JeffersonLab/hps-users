@@ -29,19 +29,21 @@ public class SkimReconstructedParticle2019 extends Driver {
     @Override
     protected void process(EventHeader event) {
         boolean skipEvent = true;
-        List<ReconstructedParticle> rps = event.get(ReconstructedParticle.class, _reconstructedParticleCollectionName);
-        if (rps.size() <= _maxNumberOfReconstructedParticles) {
-            for (ReconstructedParticle rp : rps) {
-                if (rp.getParticleIDUsed().getPDG() == _pdgId) {
-                    double mom = rp.getMomentum().magnitude();
-                    if (mom >= _minMomentumCut && mom <= _maxMomentumCut) {
-                        skipEvent = false;
-                        if (_requireCluster && rp.getClusters().isEmpty()) {
-                            skipEvent = true;
-                        }
-                        if (!rp.getTracks().isEmpty()) {
-                            if (rp.getTracks().get(0).getTrackerHits().size() < _minNumberOfHitsOnTrack) {
+        if (event.hasCollection(ReconstructedParticle.class, _reconstructedParticleCollectionName)) {
+            List<ReconstructedParticle> rps = event.get(ReconstructedParticle.class, _reconstructedParticleCollectionName);
+            if (rps.size() <= _maxNumberOfReconstructedParticles) {
+                for (ReconstructedParticle rp : rps) {
+                    if (rp.getParticleIDUsed().getPDG() == _pdgId) {
+                        double mom = rp.getMomentum().magnitude();
+                        if (mom >= _minMomentumCut && mom <= _maxMomentumCut) {
+                            skipEvent = false;
+                            if (_requireCluster && rp.getClusters().isEmpty()) {
                                 skipEvent = true;
+                            }
+                            if (!rp.getTracks().isEmpty()) {
+                                if (rp.getTracks().get(0).getTrackerHits().size() < _minNumberOfHitsOnTrack) {
+                                    skipEvent = true;
+                                }
                             }
                         }
                     }
