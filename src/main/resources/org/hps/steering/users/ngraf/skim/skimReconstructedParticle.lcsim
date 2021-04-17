@@ -21,7 +21,7 @@
         <driver name="StripFee" 
                 type="org.hps.users.ngraf.skim.SkimReconstructedParticle2019">
             <requireCluster>true</requireCluster>
-            <reconstructedParticleCollectionName>"FinalStateParticles"</reconstructedParticleCollectionName>
+            <reconstructedParticleCollectionName>FinalStateParticles</reconstructedParticleCollectionName>
             <minMomentumCut>0.5</minMomentumCut>
             <maxMomentumCut>10.</maxMomentumCut>
             <pdgId>11</pdgId>
