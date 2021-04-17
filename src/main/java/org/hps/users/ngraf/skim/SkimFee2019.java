@@ -65,23 +65,25 @@ public class SkimFee2019 extends Driver {
                                     for (Track t : tracks) {
                                         double[] mom = t.getMomentum();
                                         double p = sqrt(mom[0] * mom[0] + mom[1] * mom[1] + mom[2] * mom[2]);
-                                        int nhits = t.getTrackerHits().size();
-                                        boolean isTop = isTopTrack(t);
-                                        String half = isTop ? "top" : "bottom";
-                                        aida.histogram1D(half + " number of hits on track", 10, 0., 10.).fill(nhits);
-                                        //System.out.println("with "+nhits+" hits");
-                                        if (nhits >= _minNumberOfHitsOnTrack) {
-                                            if (_skimTopTrack && isTop) {
-                                                skipEvent = false;
-                                            }
-                                            if (_skimBottomTrack && !isTop) {
-                                                skipEvent = false;
-                                            }
-                                            aida.histogram2D("Cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
-                                            if (cluster.getPosition()[1] > 0.) {
-                                                aida.histogram1D("Top cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
-                                            } else {
-                                                aida.histogram1D("Bottom cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
+                                        if (p >= _minTrackMomentum && p <= _maxTrackMomentum) {
+                                            int nhits = t.getTrackerHits().size();
+                                            boolean isTop = isTopTrack(t);
+                                            String half = isTop ? "top" : "bottom";
+                                            aida.histogram1D(half + " number of hits on track", 10, 0., 10.).fill(nhits);
+                                            //System.out.println("with "+nhits+" hits");
+                                            if (nhits >= _minNumberOfHitsOnTrack) {
+                                                if (_skimTopTrack && isTop) {
+                                                    skipEvent = false;
+                                                }
+                                                if (_skimBottomTrack && !isTop) {
+                                                    skipEvent = false;
+                                                }
+                                                aida.histogram2D("Cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
+                                                if (cluster.getPosition()[1] > 0.) {
+                                                    aida.histogram1D("Top cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
+                                                } else {
+                                                    aida.histogram1D("Bottom cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
+                                                }
                                             }
                                         }
                                     }
