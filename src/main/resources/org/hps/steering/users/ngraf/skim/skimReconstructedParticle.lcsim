@@ -19,7 +19,7 @@
         </driver>
         <!-- Driver to strip events -->
         <driver name="StripFee" 
-                type="org.hps.users.ngraf.skim.ReconstructedParticle2019">
+                type="org.hps.users.ngraf.skim.SkimReconstructedParticle2019">
             <requireCluster>true</requireCluster>
             <reconstructedParticleCollectionName>"FinalStateParticles"</reconstructedParticleCollectionName>
             <minMomentumCut>0.5</minMomentumCut>
