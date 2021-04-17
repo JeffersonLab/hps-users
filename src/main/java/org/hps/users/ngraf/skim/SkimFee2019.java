@@ -1,5 +1,6 @@
 package org.hps.users.ngraf.skim;
 
+import static java.lang.Math.sqrt;
 import java.util.List;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.record.triggerbank.TriggerModule;
@@ -24,12 +25,12 @@ import org.lcsim.util.aida.AIDA;
  */
 public class SkimFee2019 extends Driver {
 
-    int _numberOfEventsSelected;
+    private int _numberOfEventsSelected;
     private AIDA aida = AIDA.defaultInstance();
 
-    int _maxNClusters = 1;
-    double _minClusterEnergy = 3.5;
-    double _minSeedHitEnergy = 3.0;
+    private int _maxNClusters = 1;
+    private double _minClusterEnergy = 3.5;
+    private double _minSeedHitEnergy = 3.0;
 
     private int _minNumberOfTracks = 1;
     private int _maxNumberOfTracks = 1;
@@ -40,7 +41,10 @@ public class SkimFee2019 extends Driver {
     private boolean _skimTopTrack = true;
     private boolean _skimBottomTrack = true;
 
+    private double _minTrackMomentum = 0.5;
+    private double _maxTrackMomentum = 9.;
     private String _trackCollectionName = "GBLTracks";
+
     protected void process(EventHeader event) {
         boolean skipEvent = true;
         if (event.get(RawTrackerHit.class, "SVTRawTrackerHits").size() < _maxSvtRawTrackerHits) {
@@ -59,6 +63,8 @@ public class SkimFee2019 extends Driver {
                                 if (nTracks >= _minNumberOfTracks && nTracks <= _maxNumberOfTracks) {
                                     setupSensors(event);
                                     for (Track t : tracks) {
+                                        double[] mom = t.getMomentum();
+                                        double p = sqrt(mom[0] * mom[0] + mom[1] * mom[1] + mom[2] * mom[2]);
                                         int nhits = t.getTrackerHits().size();
                                         boolean isTop = isTopTrack(t);
                                         String half = isTop ? "top" : "bottom";
@@ -184,10 +190,17 @@ public class SkimFee2019 extends Driver {
     public void setMinNumberOfTracks(int i) {
         _minNumberOfTracks = i;
     }
-    
-    public void setTrackCollectionName(String s)
-    {
+
+    public void setTrackCollectionName(String s) {
         _trackCollectionName = s;
+    }
+
+    public void setMinTrackMomentum(double d) {
+        _minTrackMomentum = d;
+    }
+
+    public void setMaxTrackMomentum(double d) {
+        _maxTrackMomentum = d;
     }
 
 }

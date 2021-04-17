@@ -39,6 +39,12 @@ public class SkimV0mumu2019 extends Driver {
     private double _clusterDeltaTimeCut = 5.0;
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
 
+    double[] p1 = new double[4];
+    double[] p2 = new double[4];
+    double[] pV = new double[3];
+    double[] particleMasses = {0.000511, 0.10566, 0.13957, 0.493667};
+    String[] particleNames = {"electron", "muon", "pion", "kaon"};
+
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
     }
@@ -170,6 +176,23 @@ public class SkimV0mumu2019 extends Driver {
                                 aida.histogram1D("v0 mu+mu- mass " + v0type, 100, 0., 1.0).fill(mumumass);
                                 aida.histogram1D("v0 mu+mu- high mass " + v0type, 100, 0.275, 1.0).fill(mumumass);
 
+                                // analyze with a few different particle hypotheses
+                                for (int j = 0; j < particleMasses.length; ++j) {
+                                    double mass2 = particleMasses[j] * particleMasses[j];
+                                    double k1 = 0;
+                                    double k2 = 0.;
+                                    for (int i = 0; i < 3; ++i) {
+                                        k1 += p1[i] * p1[i];
+                                        k2 += p2[i] * p2[i];
+                                    }
+                                    k1 = sqrt(k1 + mass2);
+                                    k2 = sqrt(k2 + mass2);
+                                    kvec1 = new Momentum4Vector(p1[0], p1[1], p1[2], k1);
+                                    kvec2 = new Momentum4Vector(p2[0], p2[1], p2[2], k2);
+                                    Lorentz4Vector vertex4vecSum = kvec1.plus(kvec2);
+                                    double vertexMass = vertex4vecSum.mass();
+                                    aida.histogram1D("vertex invariant mass phi search two clusters below " + _maxMuClusterEnergy + " " + particleNames[j] + " hypothesis", 200, 0., 2.0).fill(vertexMass);
+                                } //end of loop over particle hypotheses
                                 skipEvent = false;
                             }
                             // define e+e- sample...
