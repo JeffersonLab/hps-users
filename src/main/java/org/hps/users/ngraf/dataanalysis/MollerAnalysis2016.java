@@ -348,7 +348,9 @@ public class MollerAnalysis2016 extends Driver {
         if (skipEvent) {
             throw new Driver.NextEventException();
         } else {
-            System.out.println(event.getRunNumber() + " " + event.getEventNumber());
+            if (_dumpRunAndEventNumber) {
+                System.out.println(event.getRunNumber() + " " + event.getEventNumber());
+            }
             _numberOfEventsWritten++;
         }
     }
