@@ -8,7 +8,7 @@
 
     <execute>
         <driver name="EventMarkerDriver"/>
-        <driver name="StripFee"/>
+        <driver name="StripEvent"/>
         <driver name="Writer"/>
     </execute>
     <drivers>
@@ -18,7 +18,7 @@
             <eventInterval>1000</eventInterval>
         </driver>
         <!-- Driver to strip events -->
-        <driver name="StripFee" 
+        <driver name="StripEvent" 
                 type="org.hps.users.ngraf.dataanalysis.MollerAnalysis2016">
             <trackChisqNdfCut>8.</trackChisqNdfCut>
             <feeFractionCut>0.8</feeFractionCut>
