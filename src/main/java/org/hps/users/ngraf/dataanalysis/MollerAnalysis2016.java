@@ -3,10 +3,13 @@ package org.hps.users.ngraf.dataanalysis;
 import hep.aida.IHistogram1D;
 import hep.aida.IHistogram2D;
 import hep.physics.vec.BasicHep3Matrix;
+import hep.physics.vec.BasicHepLorentzVector;
 import hep.physics.vec.Hep3Vector;
 import hep.physics.vec.VecOp;
 import static java.lang.Math.abs;
+import static java.lang.Math.sqrt;
 import java.util.List;
+import java.util.Map;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.recon.tracking.TrackType;
 import org.lcsim.detector.DetectorElementStore;
@@ -27,6 +30,8 @@ import org.lcsim.geometry.Detector;
 import org.lcsim.math.chisq.ChisqProb;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
+import org.lcsim.util.fourvec.Lorentz4Vector;
+import org.lcsim.util.fourvec.Momentum4Vector;
 
 /**
  *
@@ -268,6 +273,7 @@ public class MollerAnalysis2016 extends Driver {
                             System.out.println(event.getRunNumber() + " " + event.getEventNumber());
                         }
                         // OK. we should be golden here
+                        reAnalyzeMoller(v);
                         skipEvent = false;
                     }
                     if (vertexCollectionName.equals("BeamspotConstrainedMollerVertices")) {
@@ -353,6 +359,43 @@ public class MollerAnalysis2016 extends Driver {
             }
             _numberOfEventsWritten++;
         }
+    }
+
+    private void reAnalyzeMoller(Vertex v) {
+        double emass = 0.000511;
+        double emass2 = emass * emass;
+        String[] names = {"X", "Y", "Z"};
+        double[] p1 = new double[3];
+        double[] p2 = new double[3];
+        double[] pV = new double[3];
+        Hep3Vector vertexPosition = v.getPosition();
+        Map<String, Double> vals = v.getParameters();
+        // System.out.println(vals);
+        p1[0] = vals.get("p1X");
+        p1[1] = vals.get("p1Y");
+        p1[2] = vals.get("p1Z");
+        p2[0] = vals.get("p2X");
+        p2[1] = vals.get("p2Y");
+        p2[2] = vals.get("p2Z");
+        double v0p = vals.get("V0P");
+        pV[0] = vals.get("V0Px");
+        pV[1] = vals.get("V0Py");
+        pV[2] = vals.get("V0Pz");
+        double e1 = 0;
+        double e2 = 0.;
+        for (int i = 0; i < 3; ++i) {
+            e1 += p1[i] * p1[i];
+            e2 += p2[i] * p2[i];
+        }
+        e1 = sqrt(e1 + emass2);
+        e2 = sqrt(e2 + emass2);
+        Momentum4Vector evec1 = new Momentum4Vector(p1[0], p1[1], p1[2], e1);
+        Momentum4Vector evec2 = new Momentum4Vector(p2[0], p2[1], p2[2], e2);
+        Lorentz4Vector eesum = evec1.plus(evec2);
+        double eemass = eesum.mass();
+        double invMass = vals.get("invMass");
+        aida.histogram1D("vertex invariant mass", 200, 0., 0.1).fill(invMass);
+        aida.histogram1D("vertex invariant mass e+e-", 200, 0., 0.1).fill(eemass);
     }
 
     private void setupSensors(EventHeader event) {
