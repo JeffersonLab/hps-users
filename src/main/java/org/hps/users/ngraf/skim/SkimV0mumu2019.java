@@ -39,6 +39,10 @@ public class SkimV0mumu2019 extends Driver {
     private double _clusterDeltaTimeCut = 5.0;
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
 
+    private boolean _selectOnMass = true;
+    private double _minMassCut = 0.5;
+    private double _maxMassCut = 0.85;
+
     double[] p1 = new double[4];
     double[] p2 = new double[4];
     double[] pV = new double[3];
@@ -46,6 +50,9 @@ public class SkimV0mumu2019 extends Driver {
     String[] particleNames = {"electron", "muon", "pion", "kaon"};
 
     protected void detectorChanged(Detector detector) {
+        if (_minMassCut >= _maxMassCut) {
+            throw new RuntimeException("Incorrect mass selection range");
+        }
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
     }
 
@@ -169,9 +176,9 @@ public class SkimV0mumu2019 extends Driver {
                                 }
                                 mu1 = sqrt(mu1 + mumass2);
                                 mu2 = sqrt(mu2 + mumass2);
-                                Momentum4Vector kvec1 = new Momentum4Vector(p1[0], p1[1], p1[2], mu1);
-                                Momentum4Vector kvec2 = new Momentum4Vector(p2[0], p2[1], p2[2], mu2);
-                                Lorentz4Vector mumusum = kvec1.plus(kvec2);
+                                Momentum4Vector fourVec1 = new Momentum4Vector(p1[0], p1[1], p1[2], mu1);
+                                Momentum4Vector fourVec2 = new Momentum4Vector(p2[0], p2[1], p2[2], mu2);
+                                Lorentz4Vector mumusum = fourVec1.plus(fourVec2);
                                 double mumumass = mumusum.mass();
                                 aida.histogram1D("v0 mu+mu- mass " + v0type, 100, 0., 1.0).fill(mumumass);
                                 aida.histogram1D("v0 mu+mu- high mass " + v0type, 100, 0.275, 1.0).fill(mumumass);
@@ -187,13 +194,28 @@ public class SkimV0mumu2019 extends Driver {
                                     }
                                     k1 = sqrt(k1 + mass2);
                                     k2 = sqrt(k2 + mass2);
-                                    kvec1 = new Momentum4Vector(p1[0], p1[1], p1[2], k1);
-                                    kvec2 = new Momentum4Vector(p2[0], p2[1], p2[2], k2);
-                                    Lorentz4Vector vertex4vecSum = kvec1.plus(kvec2);
+                                    fourVec1 = new Momentum4Vector(p1[0], p1[1], p1[2], k1);
+                                    fourVec2 = new Momentum4Vector(p2[0], p2[1], p2[2], k2);
+                                    Lorentz4Vector vertex4vecSum = fourVec1.plus(fourVec2);
                                     double vertexMass = vertex4vecSum.mass();
                                     aida.histogram1D("vertex invariant mass phi search two clusters below " + _maxMuClusterEnergy + " " + particleNames[j] + " hypothesis", 200, 0., 2.0).fill(vertexMass);
                                 } //end of loop over particle hypotheses
                                 skipEvent = false;
+                                if (_selectOnMass) {
+                                    // reject events outside of mass region of interest
+                                    if (mumumass < _minMassCut || mumumass > _maxMassCut) {
+                                        skipEvent = true;
+                                    }
+                                    // analyze "background" region
+                                    if (mumumass < _minMassCut) {
+                                        analyzeVertex(v, "background", p1, fourVec1, p2, fourVec2, pV, mumusum);
+                                    }
+                                    // analyze "signal" region
+                                    if (mumumass > _minMassCut && mumumass < _maxMassCut) {
+                                        analyzeVertex(v, "signal", p1, fourVec1, p2, fourVec2, pV, mumusum);
+
+                                    }
+                                }
                             }
                             // define e+e- sample...
                             if (negE > _maxMuClusterEnergy && posE > _maxMuClusterEnergy) {
@@ -230,11 +252,104 @@ public class SkimV0mumu2019 extends Driver {
         System.out.println("Selected " + _numberOfEventsSelected + " events");
     }
 
+    private void analyzeVertex(Vertex v, String type, double[] p1, Momentum4Vector fourVec1, double[] p2, Momentum4Vector fourVec2, double[] pv, Lorentz4Vector mumusum) {
+        aida.tree().mkdirs(type);
+        aida.tree().cd(type);
+
+        ReconstructedParticle v0 = v.getAssociatedParticle();
+        // this always has 2 tracks.
+        List<ReconstructedParticle> trks = v0.getParticles();
+        ReconstructedParticle neg = trks.get(0);
+        ReconstructedParticle pos = trks.get(1);
+        Vertex uncVert = v0.getStartVertex();
+        Hep3Vector vtxPosRot = VecOp.mult(beamAxisRotation, uncVert.getPosition());
+//                  
+        // let's also require both to have clusters, since this will distinguish e from mu
+        if (!neg.getClusters().isEmpty() && !pos.getClusters().isEmpty()) {
+            Cluster negClus = neg.getClusters().get(0);
+            int negIX = negClus.getCalorimeterHits().get(0).getIdentifierFieldValue("ix");
+            int negIY = negClus.getCalorimeterHits().get(0).getIdentifierFieldValue("iy");
+
+            Cluster posClus = pos.getClusters().get(0);
+            int posIX = posClus.getCalorimeterHits().get(0).getIdentifierFieldValue("ix");
+            int posIY = posClus.getCalorimeterHits().get(0).getIdentifierFieldValue("iy");
+
+            // in time
+            double negTime = ClusterUtilities.getSeedHitTime(negClus);
+            double posTime = ClusterUtilities.getSeedHitTime(posClus);
+            double deltaTime = negTime - posTime;
+            double topMinusBottomTime = deltaTime;
+            if (negClus.getPosition()[1] < 0) {
+                topMinusBottomTime = -deltaTime;
+            }
+            aida.histogram1D("top - bottom cluster delta time", 100, -5., 5.).fill(deltaTime);
+            aida.histogram1D("cluster pair delta time", 100, -5., 5.).fill(deltaTime);
+            double negE = negClus.getEnergy();
+            double posE = posClus.getEnergy();
+            int negNhits = neg.getTracks().get(0).getTrackerHits().size();
+            int posNhits = pos.getTracks().get(0).getTrackerHits().size();
+            double negMom = neg.getMomentum().magnitude();
+            double posMom = pos.getMomentum().magnitude();
+            double negEoverP = negE / negMom;
+            double posEoverP = posE / posMom;
+
+            aida.histogram1D("negative track nHits", 20, 0., 20.).fill(negNhits);
+            aida.histogram1D("positive track nHits", 20, 0., 20.).fill(posNhits);
+            aida.histogram1D("negative momentum", 100, 0., 6.0).fill(negMom);
+            aida.histogram1D("positive momentum", 100, 0., 6.0).fill(posMom);
+            aida.histogram1D("v0 x", 50, -5., 5.).fill(vtxPosRot.x());
+            aida.histogram1D("v0 y", 50, -2., 2.).fill(vtxPosRot.y());
+            aida.histogram2D("v0 x vs v0 y", 50, -5., 5., 50, -1., 1.).fill(vtxPosRot.x(),vtxPosRot.y());
+            aida.histogram1D("v0 z", 50, -25., 0.).fill(vtxPosRot.z());
+            aida.histogram1D("v0 x neg " + negNhits + " pos " + posNhits + " hits on track", 50, -5., 5.).fill(vtxPosRot.x());
+            aida.histogram1D("v0 y neg " + negNhits + " pos " + posNhits + " hits on track", 50, -2., 2.).fill(vtxPosRot.y());
+            aida.histogram1D("v0 z neg " + negNhits + " pos " + posNhits + " hits on track", 50, -25., 0.).fill(vtxPosRot.z());
+            aida.histogram1D("v0 energy", 100, 0., 10.).fill(v0.getEnergy());
+            aida.histogram1D("v0 mass", 50, 0., 0.5).fill(v0.getMass());
+            aida.histogram2D("v0 mass vs Z vertex", 50, 0., 0.5, 100, -20., 20.).fill(v0.getMass(), vtxPosRot.z());
+            aida.histogram2D("v0 mass vs Z vertex neg " + negNhits + " pos " + posNhits + " hits on track", 50, 0., 0.5, 100, -20., 20.).fill(v0.getMass(), vtxPosRot.z());
+            aida.profile1D("v0 mass vs Z vertex profile", 50, 0.05, 0.25).fill(v0.getMass(), vtxPosRot.z());
+            aida.histogram1D("psum", 100, 0., 6.0).fill(negMom + posMom);
+            aida.histogram1D("psum neg " + negNhits + " pos " + posNhits + " hits on track", 100, 0., 6.0).fill(negMom + posMom);
+            aida.histogram2D("negative vs positive momentum", 100, 0., 6.0, 100, 0., 6.).fill(negMom, posMom);
+            aida.histogram1D("psum both ECal Clusters", 100, 0., 6.0).fill(negMom + posMom);
+            aida.histogram1D("esum both ECal Clusters", 100, 0., 6.0).fill(neg.getClusters().get(0).getEnergy() + pos.getClusters().get(0).getEnergy());
+
+            aida.histogram2D("negative E vs positive E all", 100, 0., 5., 100, 0., 5.).fill(negE, posE);
+            aida.histogram2D("negative E vs positive E lowE", 100, 0., 0.5, 100, 0., 0.5).fill(negE, posE);
+            aida.histogram1D("negative E over P", 100, 0., 2.).fill(negEoverP);
+            aida.histogram1D("positive E over P", 100, 0., 2.).fill(posEoverP);
+            aida.histogram2D("negative vs positive E over P", 100, 0., 2., 100, 0., 2.).fill(negEoverP, posEoverP);
+
+            aida.histogram2D("negative cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(negIX, negIY);
+            aida.histogram2D("positive cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(posIX, posIY);
+        } // end of check on clusters
+
+        aida.histogram2D("p1x vs p1y", 100, -0.5, 1.0, 100, -0.5, 0.5).fill(p1[0], p1[1]);
+        aida.histogram2D("p2x vs p2y", 100, -0.5, 1.0, 100, -0.5, 0.5).fill(p2[0], p2[1]);
+        aida.histogram2D("pvx vs pvy", 100, -0.5, 1.0, 100, -0.5, 0.5).fill(pv[0], pv[1]);
+        aida.histogram1D("vertex pz", 100, 0., 7.).fill(pv[2]);
+
+        aida.tree().cd("..");
+    }
+
     public void setMaxMuClusterEnergy(double d) {
         _maxMuClusterEnergy = d;
     }
 
     public void setClusterDeltaTimeCut(double d) {
         _clusterDeltaTimeCut = d;
+    }
+
+    public void setSelectOnMass(boolean b) {
+        _selectOnMass = b;
+    }
+
+    public void setMinMassCut(double d) {
+        _minMassCut = d;
+    }
+
+    public void set_maxMassCut(double d) {
+        _maxMassCut = d;
     }
 }
