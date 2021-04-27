@@ -45,10 +45,12 @@ public class SkimV0TridentAndMuMu2019 extends Driver {
     String[] _vertexCollectionNames = {"UnconstrainedV0Vertices", "UnconstrainedV0Vertices_KF"};
 
     // mumu analysis
+    private boolean _skimV0mumu = true;
     private double _clusterDeltaTimeCut = 5.0;
     private double _muonClusterEnergyCut = 0.45;
 
     // trident analysis
+    private boolean _skimTrident = true;
     double _emass = 0.000511;
     double _emass2 = _emass * _emass;
     private final BasicHep3Matrix _beamAxisRotation = new BasicHep3Matrix();
@@ -61,21 +63,24 @@ public class SkimV0TridentAndMuMu2019 extends Driver {
     public void process(EventHeader event) {
         _skipEvent = true;
         _numberOfEventsProcessed++;
-        for (String vertexCollectionName : _vertexCollectionNames) {
-            aida.tree().mkdirs(vertexCollectionName + " mu+ mu- analysis");
-            aida.tree().cd(vertexCollectionName + " mu+ mu- analysis");
-            if (event.hasCollection(Vertex.class, vertexCollectionName)) {
-                List<Vertex> vertices = event.get(Vertex.class, vertexCollectionName);
-                aida.histogram1D("number of vertices in event", 10, -0.5, 9.5).fill(vertices.size());
-                if (vertices.size() > 0) {
-                    if (skimV0mumu(vertices)) {
-                        _numberOfV0mumuSelected++;
+        if (_skimV0mumu) {
+            for (String vertexCollectionName : _vertexCollectionNames) {
+                aida.tree().mkdirs(vertexCollectionName + " mu+ mu- analysis");
+                aida.tree().cd(vertexCollectionName + " mu+ mu- analysis");
+                if (event.hasCollection(Vertex.class, vertexCollectionName)) {
+                    List<Vertex> vertices = event.get(Vertex.class, vertexCollectionName);
+                    aida.histogram1D("number of vertices in event", 10, -0.5, 9.5).fill(vertices.size());
+                    if (vertices.size() > 0) {
+                        if (skimV0mumu(vertices)) {
+                            _numberOfV0mumuSelected++;
+                        }
                     }
-                }
-            } // end of loop over check on collection
-            aida.tree().cd("..");
-        } // end of loop over vertex collections 
-        if (skimTrident(event)) {
+                } // end of loop over check on collection
+                aida.tree().cd("..");
+            } // end of loop over vertex collections 
+        }
+        if (_skimTrident && 
+                skimTrident(event)) {
             _numberOfTridentsSelected++;
         }
         if (_skipEvent) {
@@ -267,5 +272,13 @@ public class SkimV0TridentAndMuMu2019 extends Driver {
 
     public void setMuonClusterEnergyCut(double d) {
         _muonClusterEnergyCut = d;
+    }
+
+    public void setSkimV0mumu(boolean b) {
+        _skimV0mumu = b;
+    }
+
+    public void setSkimTrident(boolean b) {
+        _skimTrident = b;
     }
 }
