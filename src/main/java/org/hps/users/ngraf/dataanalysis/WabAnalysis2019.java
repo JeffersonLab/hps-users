@@ -31,14 +31,19 @@ public class WabAnalysis2019 extends Driver {
             Cluster c1 = ecalClusters.get(0);
             double e1 = c1.getEnergy();
             Hep3Vector pos1 = new BasicHep3Vector(c1.getPosition());
+            double ey1 = e1 * pos1.y() / pos1.magnitude();
             Cluster c2 = ecalClusters.get(1);
             double e2 = c2.getEnergy();
-            double esum = e1 + e2;
             Hep3Vector pos2 = new BasicHep3Vector(c2.getPosition());
+            double ey2 = e2 * pos2.y() / pos2.magnitude();
+
+            double esum = e1 + e2;
             aida.histogram2D("two cluster e1 vs e2", 100, 0., 5., 100, 0., 5.).fill(e1, e2);
+            aida.histogram2D("two cluster ey1 vs ey2", 100, -0.3, 0.3, 100, -0.3, 0.3).fill(ey1, ey2);
             aida.histogram1D("two cluster e1 + e2", 100, 0., 5.).fill(esum);
             //opposite hemispheres
             if (pos1.x() * pos2.x() < 0. && pos1.y() * pos2.y() < 0.) {
+                aida.histogram2D("two opposite cluster ey1 vs ey2", 100, -0.3, 0.3, 100, -0.3, 0.3).fill(ey1, ey2);
                 aida.histogram2D("two opposite cluster e1 vs e2", 100, 0., 5., 100, 0., 5.).fill(e1, e2);
                 aida.histogram1D("two opposite cluster e1 + e2", 100, 0., 5.).fill(esum);
                 if (esum > esumCut) {
@@ -53,7 +58,9 @@ public class WabAnalysis2019 extends Driver {
                         double t2 = ClusterUtilities.findSeedHit(c2).getTime();
                         aida.histogram1D("delta cluster time", 50, -5., 5.).fill(t1 - t2);
                         if (abs(t1 - t2) < clusterDeltaTimeCut) {
-
+                            aida.histogram2D("two fiducial opposite esum > " + esumCut + "  ey1 vs ey2", 100, -0.3, 0.3, 100, -0.3, 0.3).fill(ey1, ey2);
+                            aida.histogram2D("two fiducial opposite esum > " + esumCut + "  esum vs eysum", 100, esumCut, 5., 100, -0.1, 0.1).fill(e1 + e2, ey1 + ey2);
+                            aida.histogram1D("two fiducial opposite esum > " + esumCut + "  ey1 + ey2", 100, -0.2, 0.2).fill(ey1 + ey2);
                             aida.histogram1D("two fiducial opposite esum > " + esumCut + " cluster e1", 100, 0., 5.).fill(e1);
                             aida.histogram1D("two fiducial opposite esum > " + esumCut + " cluster e2", 100, 0., 5.).fill(e2);
                             aida.histogram2D("two fiducial opposite esum > " + esumCut + " cluster e1 vs e2", 100, 0., 5., 100, 0., 5.).fill(e1, e2);

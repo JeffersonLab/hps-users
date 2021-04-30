@@ -1,4 +1,4 @@
-package org.hps.users.ngraf.dataanalysis;
+package org.hps.users.ngraf.dataanalysis.legacy;
 
 import hep.physics.vec.BasicHep3Matrix;
 import hep.physics.vec.BasicHep3Vector;
@@ -29,7 +29,7 @@ import org.lcsim.util.aida.AIDA;
  * Analysis of events containing a V0 and one other FinalStateParticle See if we
  * can find the recoil. Three particles should sum to the beam four-vector
  */
-public class TridentAnalysis2019 extends Driver {
+public class TridentAnalysis extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
     String vertexCollectionName = "UnconstrainedV0Vertices";
@@ -97,7 +97,7 @@ public class TridentAnalysis2019 extends Driver {
                     int pdgId = 0;
 
                     if (!third.getParticleIDs().isEmpty()) {
-                        third.getParticleIDUsed().getPDG();
+                        pdgId = third.getParticleIDUsed().getPDG();
                     }
 
                     switch (pdgId) {
@@ -143,15 +143,11 @@ public class TridentAnalysis2019 extends Driver {
                             BilliorVertex vtx = vtxFitter.fitVertex(tracksToVertex);
                             Hep3Vector v0Pos = V0.getReferencePoint();
                             Hep3Vector tridentPos = vtx.getPosition();
-
                             aida.histogram1D("V0 x", 100, -2., 2.).fill(v0Pos.x());
                             aida.histogram1D("V0 y", 100, -2., 2.).fill(v0Pos.y());
-                            aida.histogram2D("V0 x vs y", 100, -2., 2., 100, -2., 2.).fill(v0Pos.x(), v0Pos.y());
                             aida.histogram1D("V0 z", 100, -20., 20.).fill(v0Pos.z());
-
                             aida.histogram1D("Trident x", 100, -2., 2.).fill(tridentPos.x());
                             aida.histogram1D("Trident y", 100, -2., 2.).fill(tridentPos.y());
-                            aida.histogram2D("Trident x vs y", 100, -2., 2., 100, -2., 2.).fill(tridentPos.x(), tridentPos.y());
                             aida.histogram1D("Trident z", 100, -20., 20.).fill(tridentPos.z());
                             // good event, let's strip it, but only in single V0 events
 //                        if (V0List.size() == 1) {

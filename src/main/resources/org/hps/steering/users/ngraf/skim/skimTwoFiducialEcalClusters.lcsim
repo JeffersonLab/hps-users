@@ -6,6 +6,10 @@
         <printDriversDetailed>true</printDriversDetailed>
     </control>
 
+    <inputFiles>
+        <fileList>${inputFileList}</fileList>
+    </inputFiles>
+    
     <execute>
         <driver name="EventMarkerDriver"/>
         <driver name="StripTwoFiducialEcalClusters"/>
@@ -20,7 +24,7 @@
         <!-- Driver to strip events -->
         <driver name="StripTwoFiducialEcalClusters" 
                 type="org.hps.users.ngraf.skim.SkimTwoFiducialEcalClusters2019">
-              <esumCut>3.5</esumCut>
+            <esumCut>3.5</esumCut>
         </driver>
         <!-- Driver to write output slcio file -->
         <driver name="Writer"
