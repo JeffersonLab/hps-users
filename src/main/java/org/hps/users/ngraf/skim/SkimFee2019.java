@@ -37,6 +37,7 @@ public class SkimFee2019 extends Driver {
 
     private int _maxSvtRawTrackerHits = 250;
 
+    private boolean _requireTrack = true;
     private boolean _skimTopTrack = true;
     private boolean _skimBottomTrack = true;
 
@@ -54,38 +55,42 @@ public class SkimFee2019 extends Driver {
                         double seedEnergy = ClusterUtilities.findSeedHit(cluster).getCorrectedEnergy();
                         if (seedEnergy > _minSeedHitEnergy) {
                             if (TriggerModule.inFiducialRegion(cluster)) {
-                                List<Track> tracks = event.get(Track.class, _trackCollectionName);
-                                int nTracks = tracks.size();
-                                //System.out.println(nTracks+" GBL tracks");
-                                if (nTracks >= _minNumberOfTracks && nTracks <= _maxNumberOfTracks) {
-                                    setupSensors(event);
-                                    for (Track t : tracks) {
-                                        int nhits = t.getTrackerHits().size();
-                                        boolean isTop = isTopTrack(t);
-                                        String half = isTop ? "top" : "bottom";
-                                        aida.histogram1D(half + " number of hits on track", 10, 0., 10.).fill(nhits);
-                                        //System.out.println("with "+nhits+" hits");
-                                        if (nhits >= _minNumberOfHitsOnTrack) {
-                                            if (_skimTopTrack && isTop) {
-                                                skipEvent = false;
-                                            }
-                                            if (_skimBottomTrack && !isTop) {
-                                                skipEvent = false;
-                                            }
-                                            aida.histogram2D("Cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
-                                            if (cluster.getPosition()[1] > 0.) {
-                                                aida.histogram1D("Top cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
-                                            } else {
-                                                aida.histogram1D("Bottom cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
+                                if (_requireTrack) {
+                                    List<Track> tracks = event.get(Track.class, _trackCollectionName);
+                                    int nTracks = tracks.size();
+                                    //System.out.println(nTracks+" GBL tracks");
+                                    if (nTracks >= _minNumberOfTracks && nTracks <= _maxNumberOfTracks) {
+                                        setupSensors(event);
+                                        for (Track t : tracks) {
+                                            int nhits = t.getTrackerHits().size();
+                                            boolean isTop = isTopTrack(t);
+                                            String half = isTop ? "top" : "bottom";
+                                            aida.histogram1D(half + " number of hits on track", 10, 0., 10.).fill(nhits);
+                                            //System.out.println("with "+nhits+" hits");
+                                            if (nhits >= _minNumberOfHitsOnTrack) {
+                                                if (_skimTopTrack && isTop) {
+                                                    skipEvent = false;
+                                                }
+                                                if (_skimBottomTrack && !isTop) {
+                                                    skipEvent = false;
+                                                }
+                                                aida.histogram2D("Cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
+                                                if (cluster.getPosition()[1] > 0.) {
+                                                    aida.histogram1D("Top cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
+                                                } else {
+                                                    aida.histogram1D("Bottom cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+                                } else {
+                                    skipEvent = false;
+                                }//end of check on whether to require track
+                            }// end of check on fiducial cluster
+                        } // end of check on seed energy
+                    } // end of check on cluster energy
+                } // end of loop on clusters
+            } //end of check on NClusters
         }
         if (skipEvent) {
             throw new Driver.NextEventException();
@@ -176,6 +181,10 @@ public class SkimFee2019 extends Driver {
 
     public void setMaxNClusters(int i) {
         _maxNClusters = i;
+    }
+
+    public void setRequireTrack(boolean b) {
+        _requireTrack = b;
     }
 
     public void setMaxNumberOfTracks(int i) {

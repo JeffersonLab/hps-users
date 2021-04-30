@@ -23,6 +23,7 @@
             <maxNClusters>1</maxNClusters>
             <minClusterEnergy>3.5</minClusterEnergy>
             <minSeedHitEnergy>2.7</minSeedHitEnergy>
+            <requireTrack>true</requireTrack>
             <trackCollectionName>GBLTracks</trackCollectionName>
             <!-- Note that the GBLTracks have 2D hits and KalmanTracks have 1D hits -->
             <minNumberOfHitsOnTrack>5</minNumberOfHitsOnTrack>
