@@ -14,6 +14,7 @@ import org.lcsim.detector.identifier.IIdentifier;
 import org.lcsim.detector.identifier.IIdentifierDictionary;
 import org.lcsim.detector.tracker.silicon.HpsSiSensor;
 import org.lcsim.detector.tracker.silicon.SiSensor;
+import org.lcsim.event.CalorimeterHit;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.RawTrackerHit;
@@ -35,7 +36,7 @@ public class FeeAnalysis2019 extends Driver {
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
 
     private boolean _analyzeTracksByNhits = false;
-    String[] ReconstructedParticleCollectionNames = {"FinalStateParticles", "FinalStateParticles_KF"};
+    String[] ReconstructedParticleCollectionNames = {"FinalStateParticles", "FinalStateParticles_KF","OtherElectrons"};
 
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
@@ -165,8 +166,19 @@ public class FeeAnalysis2019 extends Driver {
         if (hasCluster) {
             //let's look at E/p and timing
             Cluster c = rp.getClusters().get(0);
-            aida.histogram1D("EoverP", 100, 0., 2.).fill(e / p);
-            aida.histogram2D("E vs p", 100, 2., 7., 100, 2., 7.).fill(e, p);
+            aida.histogram1D("EoverP" + topOrBottom, 100, 0., 2.).fill(e / p);
+            aida.histogram2D("E vs p" + topOrBottom, 100, 2., 7., 100, 2., 7.).fill(e, p);
+            aida.tree().mkdirs("calorimeter cell analysis");
+            aida.tree().cd("calorimeter cell analysis");
+            CalorimeterHit seed = c.getCalorimeterHits().get(0);
+            int ix = seed.getIdentifierFieldValue("ix");
+            int iy = seed.getIdentifierFieldValue("iy");
+            aida.histogram2D("cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+            aida.histogram1D("Track momentum ix: " + ix + " iy: " + iy, 100, 0., 10.0).fill(p);
+            aida.histogram1D("Track theta ix: " + ix + " iy: " + iy, 100, 0.010, 0.160).fill(theta);
+            aida.histogram2D("Track theta vs p ix: " + ix + " iy: " + iy, 100, 0.010, 0.160, 100, 0., 10.0).fill(theta, p);
+            aida.histogram2D("track momentum vs cluster x iy: " + iy, 320, -270.0, 370.0, 100, 0., 10.0).fill(c.getPosition()[0], p);
+            aida.tree().cd("..");
         }
 
         aida.tree().cd("..");
