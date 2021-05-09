@@ -49,9 +49,9 @@ public class FeeAnalysis2019 extends Driver {
         for (Cluster cluster : clusters) {
             aida.histogram2D("Cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
             if (cluster.getPosition()[1] > 0.) {
-                aida.histogram1D("Top cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
+                aida.histogram1D("Top cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
             } else {
-                aida.histogram1D("Bottom cluster energy ", 100, 3.5, 5.5).fill(cluster.getEnergy());
+                aida.histogram1D("Bottom cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
             }
         }
         setupSensors(event);
@@ -103,9 +103,9 @@ public class FeeAnalysis2019 extends Driver {
             double e = rp.getEnergy();
             aida.histogram2D(type + "single Cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(c.getPosition()[0], c.getPosition()[1]);
             if (c.getPosition()[1] > 0.) {
-                aida.histogram1D(type + "single Top cluster energy ", 100, 3.5, 5.5).fill(c.getEnergy());
+                aida.histogram1D(type + "single Top cluster energy ", 200, 0.0, 10.0).fill(c.getEnergy());
             } else {
-                aida.histogram1D(type + "single Bottom cluster energy ", 100, 3.5, 5.5).fill(c.getEnergy());
+                aida.histogram1D(type + "single Bottom cluster energy ", 200, 0.0, 10.0).fill(c.getEnergy());
             }
         }
     }
@@ -142,7 +142,7 @@ public class FeeAnalysis2019 extends Driver {
         aida.histogram1D("Track chisq per df" + topOrBottom, 100, 0., 50.).fill(chiSquared / ndf);
         aida.histogram1D("Track chisq prob" + topOrBottom, 100, 0., 1.).fill(chisqProb);
         aida.histogram1D("Track nHits" + topOrBottom, 14, 0.5, 14.5).fill(t.getTrackerHits().size());
-        aida.histogram1D("Track momentum" + topOrBottom, 100, 0., 10.0).fill(p);
+        aida.histogram1D("Track momentum" + topOrBottom, 200, 0., 10.0).fill(p);
         aida.histogram1D("Track deDx" + topOrBottom, 100, 0.00004, 0.00013).fill(t.getdEdx());
         aida.histogram1D("Track theta" + topOrBottom, 100, 0.010, 0.160).fill(theta);
         aida.histogram2D("Track theta vs p" + topOrBottom, 100, 0.010, 0.160, 100, 0., 10.0).fill(theta, p);
@@ -154,7 +154,7 @@ public class FeeAnalysis2019 extends Driver {
         if (_analyzeTracksByNhits) {
             aida.histogram1D("Track chisq per df" + topOrBottom + " " + nHits + " hits", 100, 0., 50.).fill(chiSquared / ndf);
             aida.histogram1D("Track chisq prob" + topOrBottom + " " + nHits + " hits", 100, 0., 1.).fill(chisqProb);
-            aida.histogram1D("Track momentum" + topOrBottom + " " + nHits + " hits", 100, 0., 10.0).fill(p);
+            aida.histogram1D("Track momentum" + topOrBottom + " " + nHits + " hits", 200, 0., 10.0).fill(p);
             aida.histogram1D("Track deDx" + topOrBottom + " " + nHits + " hits", 100, 0.00004, 0.00013).fill(t.getdEdx());
             aida.histogram1D("Track theta" + topOrBottom + " " + nHits + " hits", 100, 0.010, 0.160).fill(theta);
             aida.histogram2D("Track theta vs p" + topOrBottom + " " + nHits + " hits", 100, 0.010, 0.160, 100, 0., 10.0).fill(theta, p);
