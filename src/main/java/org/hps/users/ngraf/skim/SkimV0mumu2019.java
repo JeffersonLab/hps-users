@@ -30,7 +30,8 @@ public class SkimV0mumu2019 extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
 
-    private int _numberOfEventsSelected = 0;
+    private int _numberOfEventsSelected;
+    private int _numberOfEventsProcessed = 0;
     boolean skipEvent = true;
     String[] vertexCollectionNames = {"UnconstrainedV0Vertices", "UnconstrainedV0Vertices_KF"};
     private static final double muMass = 0.10566;
@@ -58,6 +59,7 @@ public class SkimV0mumu2019 extends Driver {
 
     public void process(EventHeader event) {
         skipEvent = true;
+        _numberOfEventsProcessed++;
         for (String vertexCollectionName : vertexCollectionNames) {
 //            System.out.println(vertexCollectionName);
             if (event.hasCollection(Vertex.class, vertexCollectionName)) {
@@ -249,7 +251,7 @@ public class SkimV0mumu2019 extends Driver {
 
     @Override
     protected void endOfData() {
-        System.out.println("Selected " + _numberOfEventsSelected + " events");
+        System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
     }
 
     private void analyzeVertex(Vertex v, String type, double[] p1, Momentum4Vector fourVec1, double[] p2, Momentum4Vector fourVec2, double[] pv, Lorentz4Vector mumusum) {
@@ -299,7 +301,7 @@ public class SkimV0mumu2019 extends Driver {
             aida.histogram1D("positive momentum", 100, 0., 6.0).fill(posMom);
             aida.histogram1D("v0 x", 50, -5., 5.).fill(vtxPosRot.x());
             aida.histogram1D("v0 y", 50, -2., 2.).fill(vtxPosRot.y());
-            aida.histogram2D("v0 x vs v0 y", 50, -5., 5., 50, -1., 1.).fill(vtxPosRot.x(),vtxPosRot.y());
+            aida.histogram2D("v0 x vs v0 y", 50, -5., 5., 50, -1., 1.).fill(vtxPosRot.x(), vtxPosRot.y());
             aida.histogram1D("v0 z", 50, -25., 0.).fill(vtxPosRot.z());
             aida.histogram1D("v0 x neg " + negNhits + " pos " + posNhits + " hits on track", 50, -5., 5.).fill(vtxPosRot.x());
             aida.histogram1D("v0 y neg " + negNhits + " pos " + posNhits + " hits on track", 50, -2., 2.).fill(vtxPosRot.y());

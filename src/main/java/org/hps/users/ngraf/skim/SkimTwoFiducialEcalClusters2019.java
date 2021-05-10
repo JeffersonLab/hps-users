@@ -18,12 +18,13 @@ import org.lcsim.util.aida.AIDA;
 public class SkimTwoFiducialEcalClusters2019 extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
-    private int _numberOfEventsWritten = 0;
     double _esumCut = 3.5;
-    private int _numberOfEventsSelected = 0;
+    private int _numberOfEventsSelected;
+    private int _numberOfEventsProcessed = 0;
 
     protected void process(EventHeader event) {
         boolean skipEvent = true;
+        _numberOfEventsProcessed++;
         List<Cluster> ecalClusters = event.get(Cluster.class, "EcalClustersCorr");
         // let's start by requiring two and only two clusters, in opposite hemispheres,
         // whose energies sum to the beam energy
@@ -105,7 +106,7 @@ public class SkimTwoFiducialEcalClusters2019 extends Driver {
 
     @Override
     protected void endOfData() {
-        System.out.println("Selected " + _numberOfEventsSelected + " events");
+        System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
     }
 
     public boolean isFiducial(CalorimeterHit hit) {

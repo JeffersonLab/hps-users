@@ -19,7 +19,8 @@ public class SkimReconstructedParticle2019 extends Driver {
     private int _maxNumberOfReconstructedParticles = 1;
     private int _pdgId = 11;
     private boolean _requireCluster = true;
-    private int _numberOfEventsWritten = 0;
+    private int _numberOfEventsSelected = 0;
+    private int _numberOfEventsProcessed = 0;
     private String _reconstructedParticleCollectionName = "FinalStateParticles";
 
     /**
@@ -29,6 +30,7 @@ public class SkimReconstructedParticle2019 extends Driver {
     @Override
     protected void process(EventHeader event) {
         boolean skipEvent = true;
+        _numberOfEventsProcessed++;
         if (event.hasCollection(ReconstructedParticle.class, _reconstructedParticleCollectionName)) {
             List<ReconstructedParticle> rps = event.get(ReconstructedParticle.class, _reconstructedParticleCollectionName);
             if (rps.size() <= _maxNumberOfReconstructedParticles) {
@@ -56,7 +58,7 @@ public class SkimReconstructedParticle2019 extends Driver {
             if (_writeRunAndEventNumbers) {
                 System.out.println(event.getRunNumber() + " " + event.getEventNumber());
             }
-            _numberOfEventsWritten++;
+            _numberOfEventsSelected++;
         }
     }
 
@@ -110,7 +112,7 @@ public class SkimReconstructedParticle2019 extends Driver {
 
     @Override
     protected void endOfData() {
-        System.out.println("Wrote " + _numberOfEventsWritten + " events");
+        System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
     }
 
 }

@@ -25,6 +25,7 @@ import org.lcsim.util.aida.AIDA;
 public class SkimFee2019 extends Driver {
 
     private int _numberOfEventsSelected;
+    private int _numberOfEventsProcessed = 0;
     private AIDA aida = AIDA.defaultInstance();
 
     private int _maxNClusters = 1;
@@ -45,6 +46,7 @@ public class SkimFee2019 extends Driver {
 
     protected void process(EventHeader event) {
         boolean skipEvent = true;
+        _numberOfEventsProcessed++;
         if (event.get(RawTrackerHit.class, "SVTRawTrackerHits").size() < _maxSvtRawTrackerHits) {
             List<Cluster> clusters = event.get(Cluster.class, "EcalClustersCorr");
             //System.out.println(clusters.size()+ "clusters");
@@ -100,7 +102,7 @@ public class SkimFee2019 extends Driver {
     }
 
     protected void endOfData() {
-        System.out.println("Selected " + _numberOfEventsSelected + " events");
+        System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
     }
 
     private void setupSensors(EventHeader event) {

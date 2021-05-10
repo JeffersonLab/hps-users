@@ -14,11 +14,13 @@ import org.lcsim.util.aida.AIDA;
  */
 public class SkimFeeClusterMissingTheTrack extends Driver {
 
-    int _numberOfEventsSelected;
+    private int _numberOfEventsSelected;
+    private int _numberOfEventsProcessed = 0;
     private AIDA aida = AIDA.defaultInstance();
 
     protected void process(EventHeader event) {
         boolean skipEvent = true;
+        _numberOfEventsProcessed++;
         List<ReconstructedParticle> rpList = event.get(ReconstructedParticle.class, "FinalStateParticles_KF");
         for (ReconstructedParticle rp : rpList) {
             //photons
@@ -44,7 +46,7 @@ public class SkimFeeClusterMissingTheTrack extends Driver {
     }
 
     protected void endOfData() {
-        System.out.println("Selected " + _numberOfEventsSelected + " events");
+        System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
     }
 
 }

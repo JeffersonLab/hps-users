@@ -27,7 +27,8 @@ public class SkimTridents2019 extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
 
-    private int _numberOfEventsSelected = 0;
+    private int _numberOfEventsSelected;
+    private int _numberOfEventsProcessed = 0;
     boolean skipEvent = true;
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
 
@@ -46,6 +47,7 @@ public class SkimTridents2019 extends Driver {
     @Override
     protected void process(EventHeader event) {
         skipEvent = true;
+        _numberOfEventsProcessed++;
         List<ReconstructedParticle> V0List = event.get(ReconstructedParticle.class, "UnconstrainedV0Candidates");
         int nV0 = V0List.size();
         List<ReconstructedParticle> VCList = event.get(ReconstructedParticle.class, "UnconstrainedVcCandidates");
@@ -151,7 +153,7 @@ public class SkimTridents2019 extends Driver {
                                     aida.histogram2D("ele1 vs ele2 cluster energy", 100, 0., 3., 100, 0., 3.).fill(ele1e, ele2e);
                                     aida.histogram2D("ele1 vs pose cluster energy", 100, 0., 3., 100, 0., 3.).fill(ele1e, pose);
                                     aida.histogram2D("ele2 vs pose cluster energy", 100, 0., 3., 100, 0., 3.).fill(ele2e, pose);
-                                    
+
                                     aida.histogram2D("ele1 cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(electrons.get(0).getClusters().get(0).getPosition()[0], electrons.get(0).getClusters().get(0).getPosition()[1]);
                                     aida.histogram2D("ele2 cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(electrons.get(1).getClusters().get(0).getPosition()[0], electrons.get(1).getClusters().get(0).getPosition()[1]);
                                     aida.histogram2D("pos cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(positrons.get(0).getClusters().get(0).getPosition()[0], positrons.get(0).getClusters().get(0).getPosition()[1]);
@@ -185,7 +187,7 @@ public class SkimTridents2019 extends Driver {
 
     @Override
     protected void endOfData() {
-        System.out.println("Selected " + _numberOfEventsSelected + " events");
+        System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
     }
 
     private BasicHepLorentzVector makeFourVector(ReconstructedParticle rp) {
