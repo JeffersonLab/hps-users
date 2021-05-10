@@ -6,9 +6,11 @@
         <printDriversDetailed>true</printDriversDetailed>
     </control>
 
+<!--
     <inputFiles>
         <fileList>${inputFileList}</fileList>
     </inputFiles>
+-->
     
     <execute>
         <driver name="EventMarkerDriver"/>
