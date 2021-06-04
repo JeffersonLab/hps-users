@@ -1,5 +1,23 @@
 package org.hps.users.ngraf.plotutils;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+
+import org.lcsim.util.aida.AIDA;
+
+import com.itextpdf.text.BadElementException;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.pdf.PdfWriter;
+
 import hep.aida.IAnalysisFactory;
 import hep.aida.IBaseHistogram;
 import hep.aida.IDataStyle;
@@ -7,16 +25,13 @@ import hep.aida.IHistogram1D;
 import hep.aida.IHistogramFactory;
 import hep.aida.IPlotter;
 import hep.aida.ITree;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import org.lcsim.util.aida.AIDA;
 
 /**
  *
  * @author Norman A. Graf
+ *
+ * To run:
+ * java -cp target/hps-users-5.1-SNAPSHOT-bin.jar org.hps.users.ngraf.plotutils.ComparePlots reference.aida test.aida
  */
 public class ComparePlots {
 
@@ -41,7 +56,7 @@ public class ComparePlots {
 
         List<IPlotter> plotters = new ArrayList<>();
 
-        // get the list of histograms in this file 
+        // get the list of histograms in this file
         String[] objectTypes = testSourceTree.listObjectTypes("/", true);
         String[] objectNames = testSourceTree.listObjectNames("/", true);
         for (int pathIndex = 0; pathIndex < objectNames.length; pathIndex++) {
@@ -88,12 +103,69 @@ public class ComparePlots {
         }
         System.out.println("Added " + plotters.size() + " plotters");
 
+        /**
+         * Write generated plots to PDF file --JM
+         */
         if (writeToFile) {
-            for (IPlotter p : plotters) {
-                p.writeToFile(p.title() + "." + fileType);
+            String pdfName = "plots.pdf";
+            System.out.println("Writing plots to: " + pdfName);
+            writePdf(plotters, pdfName, fileType);
+        }
+    }
+
+    /**
+     * Write plotter images to a PDF, one per page
+     *
+     * @param plotters The list of AIDA plotters
+     * @param fileName The name of the output PDF file
+     * @param imgType The type of images to generate (e.g. "png")
+     * @throws IOException If there is an IO error
+     */
+    static void writePdf(List<IPlotter> plotters, String fileName, String imgType) throws IOException {
+
+        // Generate a list of buffered images from the plotters
+        List<BufferedImage> images = new ArrayList<BufferedImage>();
+        String tempFileName = "temp." + imgType;
+        File tempFile = new File(tempFileName);
+        tempFile.delete();
+        for (IPlotter p : plotters) {
+            p.writeToFile(tempFileName, imgType);
+            BufferedImage img = ImageIO.read(tempFile);
+            images.add(img);
+            tempFile.delete();
+        }
+
+        // Open the PDF document and the writer
+        Document document = new Document(PageSize.LETTER.rotate(), 50, 50, 50, 50);
+        PdfWriter writer = null;
+        try {
+            writer = PdfWriter.getInstance(document, new FileOutputStream(fileName));
+        } catch (DocumentException e) {
+            throw new IOException(e);
+        }
+        document.open();
+
+        // Write the generated images to a PDF, one per page
+        for (BufferedImage img : images) {
+            document.newPage();
+
+            // Write image into the document.
+            com.itextpdf.text.Image iTextImage = null;
+            try {
+                iTextImage = com.itextpdf.text.Image.getInstance(writer, img, 1f);
+            } catch (BadElementException e) {
+                throw new IOException(e);
+            }
+            iTextImage.scaleAbsolute(document.getPageSize().getWidth(), (float) 0.75 * document.getPageSize().getHeight());
+            iTextImage.setAlignment(Element.ALIGN_CENTER);
+            try {
+                document.add(iTextImage);
+            } catch (DocumentException e) {
+                throw new IOException(e);
             }
         }
-//        ExportPdf.write(plotters, "plots.pdf");
 
+        document.close();
     }
+
 }
