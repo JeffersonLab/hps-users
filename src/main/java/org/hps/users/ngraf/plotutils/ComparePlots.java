@@ -93,5 +93,7 @@ public class ComparePlots {
                 p.writeToFile(p.title() + "." + fileType);
             }
         }
+//        ExportPdf.write(plotters, "plots.pdf");
+
     }
 }
