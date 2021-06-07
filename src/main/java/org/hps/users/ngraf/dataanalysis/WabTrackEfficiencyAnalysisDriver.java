@@ -17,10 +17,14 @@ import org.lcsim.util.aida.AIDA;
  */
 public class WabTrackEfficiencyAnalysisDriver extends Driver {
 
+    private int _numberOfEventsSelected;
+    private int _numberOfEventsProcessed = 0;
     private AIDA aida = AIDA.defaultInstance();
     String[] finalStateParticleCollectionNames = {"FinalStateParticles", "FinalStateParticles_KF"};
 
     protected void process(EventHeader event) {
+        boolean skipEvent = true;
+        _numberOfEventsProcessed++;
         // quick loop over the two ReconstructedParticle collections.
         // kill events with a reconstructed positron associated with the "photon" cluster
         boolean skipit = false;
@@ -148,6 +152,7 @@ public class WabTrackEfficiencyAnalysisDriver extends Driver {
                 String dir = "GBL track without KF track";
                 if (gblEventType.equals("ge") || gblEventType.equals("eg")) {
                     if (kfEventType == "gg") {
+                        skipEvent = false;
                         aida.tree().mkdirs(dir);
                         aida.tree().cd(dir);
                         aida.histogram1D("Cluster esum", 100, 0., 5.5).fill(esum);
@@ -164,6 +169,11 @@ public class WabTrackEfficiencyAnalysisDriver extends Driver {
                 }
             } // end of check on two clusters
         } // end of check on skipit
+        if (skipEvent) {
+            throw new Driver.NextEventException();
+        } else {
+            _numberOfEventsSelected++;
+        }
     }
 
     @Override
@@ -171,15 +181,14 @@ public class WabTrackEfficiencyAnalysisDriver extends Driver {
         IAnalysisFactory af = IAnalysisFactory.create();
         IHistogramFactory hf = af.createHistogramFactory(af.createTreeFactory().create());
         ITree tree = aida.tree();
-//        for (String str : tree.listObjectNames()) {
-//            System.out.println(str);
-//        }
-
         IHistogram1D gblGG = (IHistogram1D) aida.tree().find("/FinalStateParticles WAB Tracking Analysis/Cluster esum GBL gg");
         IHistogram1D kfGG = (IHistogram1D) aida.tree().find("/FinalStateParticles_KF WAB Tracking Analysis/Cluster esum KF gg");
         IHistogram1D GGesum = (IHistogram1D) aida.tree().find("Cluster esum ");
         System.out.println("GBL gg all entries " + gblGG.allEntries());
         IHistogram1D gblInefficiency = hf.divide("GBL tracking inefficiency", gblGG, GGesum);
         IHistogram1D kfInefficiency = hf.divide("KF tracking inefficiency", kfGG, GGesum);
+
+        System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
+
     }
 }
