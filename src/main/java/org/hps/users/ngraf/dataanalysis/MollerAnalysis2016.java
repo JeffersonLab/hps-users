@@ -274,6 +274,7 @@ public class MollerAnalysis2016 extends Driver {
                         }
                         // OK. we should be golden here
                         reAnalyzeMoller(v);
+                        reReconstructMoller(v);
                         skipEvent = false;
                     }
                     if (vertexCollectionName.equals("BeamspotConstrainedMollerVertices")) {
@@ -359,6 +360,36 @@ public class MollerAnalysis2016 extends Driver {
             }
             _numberOfEventsWritten++;
         }
+    }
+
+    private void reReconstructMoller(Vertex v) {
+        aida.tree().mkdirs("rerecon Moller Analysis");
+        aida.tree().cd("rerecon Moller Analysis");
+        Map<String, Double> vals = v.getParameters();
+        double invMass = vals.get("invMass");
+        ReconstructedParticle v0 = v.getAssociatedParticle();
+        // this always has 2 tracks.
+        List<ReconstructedParticle> trks = v0.getParticles();
+        ReconstructedParticle rp1 = trks.get(0);
+        ReconstructedParticle rp2 = trks.get(1);
+        // check here on mass
+        aida.histogram1D("rp1 mass", 100, 0.0, 0.01).fill(rp1.getMass());
+        if (!rp1.getClusters().isEmpty()) {
+            aida.histogram1D("rp1 mass with cluster", 100, 0.0, 0.01).fill(rp1.getMass());
+        }
+        aida.histogram1D("rp2 mass", 100, 0.0, 0.01).fill(rp1.getMass());
+        if (!rp2.getClusters().isEmpty()) {
+            aida.histogram1D("rp2 mass with cluster", 100, 0.0, 0.01).fill(rp2.getMass());
+        }
+        aida.histogram1D("vertex invariant mass", 200, 0., 0.1).fill(invMass);
+        if (!rp1.getClusters().isEmpty() && !rp2.getClusters().isEmpty()) {
+            aida.histogram1D("vertex invariant mass both with clusters", 200, 0., 0.1).fill(invMass);
+        } else if (rp1.getClusters().isEmpty() && rp2.getClusters().isEmpty()) {
+            aida.histogram1D("vertex invariant mass both without clusters", 200, 0., 0.1).fill(invMass);
+        } else {
+            aida.histogram1D("vertex invariant mass only one cluster", 200, 0., 0.1).fill(invMass);
+        }
+        aida.tree().cd("..");
     }
 
     private void reAnalyzeMoller(Vertex v) {

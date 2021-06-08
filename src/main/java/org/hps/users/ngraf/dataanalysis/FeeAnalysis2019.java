@@ -36,7 +36,7 @@ public class FeeAnalysis2019 extends Driver {
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
 
     private boolean _analyzeTracksByNhits = false;
-    String[] ReconstructedParticleCollectionNames = {"FinalStateParticles", "FinalStateParticles_KF","OtherElectrons"};
+    String[] ReconstructedParticleCollectionNames = {"FinalStateParticles", "FinalStateParticles_KF", "OtherElectrons", "OtherElectrons_KF"};
 
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
@@ -57,26 +57,27 @@ public class FeeAnalysis2019 extends Driver {
         setupSensors(event);
         // let's look at ReconstructedParticles...
         for (String rpCollectionName : ReconstructedParticleCollectionNames) {
-            aida.tree().mkdirs(rpCollectionName);
-            aida.tree().cd(rpCollectionName);
-            List<ReconstructedParticle> rpList = event.get(ReconstructedParticle.class, rpCollectionName);
-            int nTracksWithClusters = 0;
-            int nTracks = 0;
-            for (ReconstructedParticle rp : rpList) {
-                if (abs(rp.getParticleIDUsed().getPDG()) == 11) {
-                    nTracks++;
-                    if (rp.getClusters().size() == 1) {
-                        nTracksWithClusters++;
+            if (event.hasCollection(ReconstructedParticle.class, rpCollectionName)) {
+                aida.tree().mkdirs(rpCollectionName);
+                aida.tree().cd(rpCollectionName);
+                List<ReconstructedParticle> rpList = event.get(ReconstructedParticle.class, rpCollectionName);
+                int nTracksWithClusters = 0;
+                int nTracks = 0;
+                for (ReconstructedParticle rp : rpList) {
+                    if (abs(rp.getParticleIDUsed().getPDG()) == 11) {
+                        nTracks++;
+                        if (rp.getClusters().size() == 1) {
+                            nTracksWithClusters++;
+                        }
                     }
+                    analyzeReconstructedParticle(rp);
                 }
-                analyzeReconstructedParticle(rp);
+                aida.histogram1D("number of tracks", 5, -0.5, 4.5).fill(nTracks);
+                aida.histogram1D("number of tracks with clusters", 5, -0.5, 4.5).fill(nTracksWithClusters);
+                aida.histogram2D("number of clusters vs number of tracks with clusters", 5, -0.5, 4.5, 5, -0.5, 4.5).fill(nClusters, nTracksWithClusters);
+                aida.tree().cd("..");
             }
-            aida.histogram1D("number of tracks", 5, -0.5, 4.5).fill(nTracks);
-            aida.histogram1D("number of tracks with clusters", 5, -0.5, 4.5).fill(nTracksWithClusters);
-            aida.histogram2D("number of clusters vs number of tracks with clusters", 5, -0.5, 4.5, 5, -0.5, 4.5).fill(nClusters, nTracksWithClusters);
-            aida.tree().cd("..");
         }
-
     }
 
     void analyzeReconstructedParticle(ReconstructedParticle rp) {

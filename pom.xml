@@ -10,7 +10,7 @@
   </parent>
   <properties>
     <checkstyle.skip>true</checkstyle.skip>
-    <!--<skipTests>true</skipTests>-->
+    <skipTests>true</skipTests>
   </properties>
   <repositories>
     <repository>
@@ -31,6 +31,22 @@
       <version>4.13.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+        <groupId>com.itextpdf</groupId>
+        <artifactId>itext7-core</artifactId>
+        <version>7.1.15</version>
+        <type>pom</type>
+    </dependency>
+    <dependency>
+       <groupId>org.slf4j</groupId>
+       <artifactId>slf4j-api</artifactId>
+       <version>1.7.5</version>
+   </dependency>
+   <dependency>
+       <groupId>org.slf4j</groupId>
+       <artifactId>slf4j-log4j12</artifactId>
+       <version>1.7.5</version>
+   </dependency>    
   </dependencies>
   <build>
     <plugins>

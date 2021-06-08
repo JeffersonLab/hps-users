@@ -8,7 +8,6 @@ import static java.lang.Math.sqrt;
 import java.util.List;
 import java.util.Map;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
-import org.hps.recon.tracking.TrackType;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.ReconstructedParticle;
@@ -120,36 +119,8 @@ public class SkimV0mumu2019 extends Driver {
                         double negEoverP = negE / negMom;
                         double posEoverP = posE / posMom;
 
+                        double myMass = v0.getMass();
                         if (negNhits >= minNhits && posNhits >= minNhits && abs(deltaTime) < _clusterDeltaTimeCut) {
-                            aida.histogram1D("negative track nHits", 20, 0., 20.).fill(negNhits);
-                            aida.histogram1D("positive track nHits", 20, 0., 20.).fill(posNhits);
-                            aida.histogram1D("negative momentum", 100, 0., 6.0).fill(negMom);
-                            aida.histogram1D("positive momentum", 100, 0., 6.0).fill(posMom);
-                            aida.histogram1D("v0 x", 50, -5., 5.).fill(vtxPosRot.x());
-                            aida.histogram1D("v0 y", 50, -2., 2.).fill(vtxPosRot.y());
-                            aida.histogram1D("v0 z", 50, -25., 0.).fill(vtxPosRot.z());
-                            aida.histogram1D("v0 x neg " + negNhits + " pos " + posNhits + " hits on track", 50, -5., 5.).fill(vtxPosRot.x());
-                            aida.histogram1D("v0 y neg " + negNhits + " pos " + posNhits + " hits on track", 50, -2., 2.).fill(vtxPosRot.y());
-                            aida.histogram1D("v0 z neg " + negNhits + " pos " + posNhits + " hits on track", 50, -25., 0.).fill(vtxPosRot.z());
-                            aida.histogram1D("v0 energy", 100, 0., 10.).fill(v0.getEnergy());
-                            aida.histogram1D("v0 mass", 50, 0., 0.5).fill(v0.getMass());
-                            aida.histogram2D("v0 mass vs Z vertex", 50, 0., 0.5, 100, -20., 20.).fill(v0.getMass(), vtxPosRot.z());
-                            aida.histogram2D("v0 mass vs Z vertex neg " + negNhits + " pos " + posNhits + " hits on track", 50, 0., 0.5, 100, -20., 20.).fill(v0.getMass(), vtxPosRot.z());
-                            aida.profile1D("v0 mass vs Z vertex profile", 50, 0.05, 0.25).fill(v0.getMass(), vtxPosRot.z());
-                            aida.histogram1D("psum", 100, 0., 6.0).fill(negMom + posMom);
-                            aida.histogram1D("psum neg " + negNhits + " pos " + posNhits + " hits on track", 100, 0., 6.0).fill(negMom + posMom);
-                            aida.histogram2D("negative vs positive momentum", 100, 0., 6.0, 100, 0., 6.).fill(negMom, posMom);
-                            aida.histogram1D("psum both ECal Clusters", 100, 0., 6.0).fill(negMom + posMom);
-                            aida.histogram1D("esum both ECal Clusters", 100, 0., 6.0).fill(neg.getClusters().get(0).getEnergy() + pos.getClusters().get(0).getEnergy());
-
-                            aida.histogram2D("negative E vs positive E all", 100, 0., 5., 100, 0., 5.).fill(negE, posE);
-                            aida.histogram2D("negative E vs positive E lowE", 100, 0., 0.5, 100, 0., 0.5).fill(negE, posE);
-                            aida.histogram1D("negative E over P", 100, 0., 2.).fill(negEoverP);
-                            aida.histogram1D("positive E over P", 100, 0., 2.).fill(posEoverP);
-                            aida.histogram2D("negative vs positive E over P", 100, 0., 2., 100, 0., 2.).fill(negEoverP, posEoverP);
-
-                            aida.histogram2D("negative cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(negIX, negIY);
-                            aida.histogram2D("positive cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(posIX, posIY);
 
                             // define mu+mu- sample...
                             String v0type = "bkgnd";
@@ -182,6 +153,7 @@ public class SkimV0mumu2019 extends Driver {
                                 Momentum4Vector fourVec2 = new Momentum4Vector(p2[0], p2[1], p2[2], mu2);
                                 Lorentz4Vector mumusum = fourVec1.plus(fourVec2);
                                 double mumumass = mumusum.mass();
+                                myMass = mumumass;
                                 aida.histogram1D("v0 mu+mu- mass " + v0type, 100, 0., 1.0).fill(mumumass);
                                 aida.histogram1D("v0 mu+mu- high mass " + v0type, 100, 0.275, 1.0).fill(mumumass);
 
@@ -223,7 +195,38 @@ public class SkimV0mumu2019 extends Driver {
                             if (negE > _maxMuClusterEnergy && posE > _maxMuClusterEnergy) {
                                 v0type = "e+e-";
                             }
-                            aida.histogram1D("v0 mass " + v0type, 50, 0., 0.5).fill(v0.getMass());
+
+                            aida.histogram1D("negative track nHits", 20, 0., 20.).fill(negNhits);
+                            aida.histogram1D("positive track nHits", 20, 0., 20.).fill(posNhits);
+                            aida.histogram1D("negative momentum", 100, 0., 6.0).fill(negMom);
+                            aida.histogram1D("positive momentum", 100, 0., 6.0).fill(posMom);
+                            aida.histogram1D("v0 x", 50, -5., 5.).fill(vtxPosRot.x());
+                            aida.histogram1D("v0 y", 50, -2., 2.).fill(vtxPosRot.y());
+                            aida.histogram1D("v0 z", 100, -25., 25.).fill(vtxPosRot.z());
+                            aida.histogram1D("v0 x neg " + negNhits + " pos " + posNhits + " hits on track", 50, -5., 5.).fill(vtxPosRot.x());
+                            aida.histogram1D("v0 y neg " + negNhits + " pos " + posNhits + " hits on track", 50, -2., 2.).fill(vtxPosRot.y());
+                            aida.histogram1D("v0 z neg " + negNhits + " pos " + posNhits + " hits on track", 100, -25., 25.).fill(vtxPosRot.z());
+                            aida.histogram1D("v0 energy", 100, 0., 10.).fill(v0.getEnergy());
+                            aida.histogram1D("my mass", 100, 0., 1.0).fill(myMass);
+                            aida.histogram2D("my mass vs Z vertex", 100, 0., 1.0, 100, -20., 20.).fill(myMass, vtxPosRot.z());
+                            aida.histogram2D("my mass vs Z vertex neg " + negNhits + " pos " + posNhits + " hits on track", 100, 0., 1.0, 100, -20., 20.).fill(myMass, vtxPosRot.z());
+                            aida.profile1D("my mass vs Z vertex profile", 100, 0., 1.0).fill(myMass, vtxPosRot.z());
+                            aida.histogram1D("psum", 100, 0., 6.0).fill(negMom + posMom);
+                            aida.histogram1D("psum neg " + negNhits + " pos " + posNhits + " hits on track", 100, 0., 6.0).fill(negMom + posMom);
+                            aida.histogram2D("negative vs positive momentum", 100, 0., 6.0, 100, 0., 6.).fill(negMom, posMom);
+                            aida.histogram1D("psum both ECal Clusters", 100, 0., 6.0).fill(negMom + posMom);
+                            aida.histogram1D("esum both ECal Clusters", 100, 0., 6.0).fill(neg.getClusters().get(0).getEnergy() + pos.getClusters().get(0).getEnergy());
+
+                            aida.histogram2D("negative E vs positive E all", 100, 0., 5., 100, 0., 5.).fill(negE, posE);
+                            aida.histogram2D("negative E vs positive E lowE", 100, 0., 0.5, 100, 0., 0.5).fill(negE, posE);
+                            aida.histogram1D("negative E over P", 100, 0., 2.).fill(negEoverP);
+                            aida.histogram1D("positive E over P", 100, 0., 2.).fill(posEoverP);
+                            aida.histogram2D("negative vs positive E over P", 100, 0., 2., 100, 0., 2.).fill(negEoverP, posEoverP);
+
+                            aida.histogram2D("negative cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(negIX, negIY);
+                            aida.histogram2D("positive cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(posIX, posIY);
+                            aida.histogram1D("v0 mass " + v0type, 100, 0., 1.0).fill(v0.getMass());
+                            aida.histogram1D("my mass " + v0type, 100, 0., 1.0).fill(myMass);
                             aida.histogram1D("cluster pair delta time " + v0type, 100, -5., 5.).fill(deltaTime);
                             aida.histogram1D("negative momentum " + v0type, 100, 0., 6.0).fill(negMom);
                             aida.histogram1D("positive momentum " + v0type, 100, 0., 6.0).fill(posMom);
@@ -302,15 +305,21 @@ public class SkimV0mumu2019 extends Driver {
             aida.histogram1D("v0 x", 50, -5., 5.).fill(vtxPosRot.x());
             aida.histogram1D("v0 y", 50, -2., 2.).fill(vtxPosRot.y());
             aida.histogram2D("v0 x vs v0 y", 50, -5., 5., 50, -1., 1.).fill(vtxPosRot.x(), vtxPosRot.y());
-            aida.histogram1D("v0 z", 50, -25., 0.).fill(vtxPosRot.z());
+            aida.histogram1D("v0 z", 100, -25., 25.).fill(vtxPosRot.z());
             aida.histogram1D("v0 x neg " + negNhits + " pos " + posNhits + " hits on track", 50, -5., 5.).fill(vtxPosRot.x());
             aida.histogram1D("v0 y neg " + negNhits + " pos " + posNhits + " hits on track", 50, -2., 2.).fill(vtxPosRot.y());
-            aida.histogram1D("v0 z neg " + negNhits + " pos " + posNhits + " hits on track", 50, -25., 0.).fill(vtxPosRot.z());
+            aida.histogram1D("v0 z neg " + negNhits + " pos " + posNhits + " hits on track", 100, -25., 25.).fill(vtxPosRot.z());
             aida.histogram1D("v0 energy", 100, 0., 10.).fill(v0.getEnergy());
-            aida.histogram1D("v0 mass", 50, 0., 0.5).fill(v0.getMass());
-            aida.histogram2D("v0 mass vs Z vertex", 50, 0., 0.5, 100, -20., 20.).fill(v0.getMass(), vtxPosRot.z());
-            aida.histogram2D("v0 mass vs Z vertex neg " + negNhits + " pos " + posNhits + " hits on track", 50, 0., 0.5, 100, -20., 20.).fill(v0.getMass(), vtxPosRot.z());
-            aida.profile1D("v0 mass vs Z vertex profile", 50, 0.05, 0.25).fill(v0.getMass(), vtxPosRot.z());
+            aida.histogram1D("v0 mass", 100, 0., 1.0).fill(v0.getMass());
+            aida.histogram2D("v0 mass vs Z vertex", 100, 0., 1.0, 100, -20., 20.).fill(v0.getMass(), vtxPosRot.z());
+            aida.histogram2D("v0 mass vs Z vertex neg " + negNhits + " pos " + posNhits + " hits on track", 100, 0., 1.0, 100, -20., 20.).fill(v0.getMass(), vtxPosRot.z());
+            aida.profile1D("v0 mass vs Z vertex profile", 100, 0., 1.0).fill(v0.getMass(), vtxPosRot.z());
+
+            aida.histogram1D("mumu mass", 100, 0., 1.0).fill(mumusum.mass());
+            aida.histogram2D("mumu mass vs Z vertex", 100, 0., 1.0, 100, -20., 20.).fill(mumusum.mass(), vtxPosRot.z());
+            aida.histogram2D("mumu mass vs Z vertex neg " + negNhits + " pos " + posNhits + " hits on track", 100, 0., 1.0, 100, -20., 20.).fill(mumusum.mass(), vtxPosRot.z());
+            aida.profile1D("mumu mass vs Z vertex profile", 100, 0., 1.0).fill(mumusum.mass(), vtxPosRot.z());
+
             aida.histogram1D("psum", 100, 0., 6.0).fill(negMom + posMom);
             aida.histogram1D("psum neg " + negNhits + " pos " + posNhits + " hits on track", 100, 0., 6.0).fill(negMom + posMom);
             aida.histogram2D("negative vs positive momentum", 100, 0., 6.0, 100, 0., 6.).fill(negMom, posMom);

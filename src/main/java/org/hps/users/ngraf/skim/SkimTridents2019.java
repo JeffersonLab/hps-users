@@ -13,8 +13,12 @@ import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.recon.tracking.TrackData;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
+import org.lcsim.event.GenericObject;
+import org.lcsim.event.LCRelation;
 import org.lcsim.event.ReconstructedParticle;
+import org.lcsim.event.RelationalTable;
 import org.lcsim.event.Track;
+import org.lcsim.event.base.BaseRelationalTable;
 import org.lcsim.geometry.Detector;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
@@ -54,7 +58,9 @@ public class SkimTridents2019 extends Driver {
         int nVc = VCList.size();
 
         if (nV0 == 1 && nVc == 1) {
+            RelationalTable trackToData = getKFTrackDataRelations(event);
             for (String reconstructedParticleCollectionName : reconstructedParticleCollectionNames) {
+                boolean isKF = reconstructedParticleCollectionName.contains("_KF") ? true : false;
                 List<ReconstructedParticle> rpList = event.get(ReconstructedParticle.class, reconstructedParticleCollectionName);
                 if (rpList.size() == 3) {
                     aida.tree().mkdirs(reconstructedParticleCollectionName + " trident track analysis");
@@ -94,13 +100,28 @@ public class SkimTridents2019 extends Driver {
 
                             // let's look at track times...
                             Track posTrack = positrons.get(0).getTracks().get(0);
-                            double posTrackTime = TrackData.getTrackTime(TrackData.getTrackData(event, posTrack));
+                            double posTrackTime = -999.;
+                            if (isKF) {
+                                posTrackTime = ((GenericObject) trackToData.from(posTrack)).getFloatVal(0);
+                            } else {
+                                posTrackTime = TrackData.getTrackTime(TrackData.getTrackData(event, posTrack));
+                            }
 
                             Track ele1Track = electrons.get(0).getTracks().get(0);
-                            double ele1TrackTime = TrackData.getTrackTime(TrackData.getTrackData(event, ele1Track));
+                            double ele1TrackTime = -999.;
+                            if (isKF) {
+                                ele1TrackTime = ((GenericObject) trackToData.from(ele1Track)).getFloatVal(0);
+                            } else {
+                                ele1TrackTime = TrackData.getTrackTime(TrackData.getTrackData(event, ele1Track));
+                            }
 
                             Track ele2Track = electrons.get(1).getTracks().get(0);
-                            double ele2TrackTime = TrackData.getTrackTime(TrackData.getTrackData(event, ele2Track));
+                            double ele2TrackTime = -999.;
+                            if (isKF) {
+                                ele2TrackTime = ((GenericObject) trackToData.from(ele2Track)).getFloatVal(0);
+                            } else {
+                                ele2TrackTime = TrackData.getTrackTime(TrackData.getTrackData(event, ele2Track));
+                            }
                             // before cuts
                             aida.histogram1D("delta track time ele1 ele2 before time cuts", 50, -5., 5.).fill(ele1TrackTime - ele2TrackTime);
                             aida.histogram1D("delta track time ele1 pos1 before time cuts", 50, -5., 5.).fill(ele1TrackTime - posTrackTime);
@@ -198,6 +219,26 @@ public class SkimTridents2019 extends Driver {
             eSquared += mom[i] * mom[i];
         }
         return new BasicHepLorentzVector(sqrt(eSquared), mom);
+    }
+
+    public RelationalTable getKFTrackDataRelations(EventHeader event) {
+
+        List<TrackData> TrackData;
+        RelationalTable trackToData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
+        List<LCRelation> trackRelations;
+        TrackData trackdata;
+        TrackData = event.get(TrackData.class, "KFTrackData");
+        trackRelations = event.get(LCRelation.class, "KFTrackDataRelations");
+        for (LCRelation relation : trackRelations) {
+            if (relation != null && relation.getTo() != null) {
+                trackToData.add(relation.getFrom(), relation.getTo());
+            }
+        }
+        return trackToData;
+    }
+
+    public double getKFTrackTime(Track t) {
+        return 0.;
     }
 
     public void setMinNumberOfElectronsWithClusters(int i) {
