@@ -146,7 +146,21 @@ public class RhoPiPiAnalysisDriver extends Driver {
                             aida.histogram1D("pi+ momentum two MIP clusters pi+ pi-", 100, 0., 5.0).fill(piplus.getMomentum().magnitude());
                             aida.histogram1D("pi- momentum two MIP clusters pi+ pi-", 100, 0., 5.0).fill(piminus.getMomentum().magnitude());
                             aida.histogram2D("pi+ vs pi- momentum two MIP clusters pi+ pi-", 100, 0., 5.0, 100, 0., 5.0).fill(piplus.getMomentum().magnitude(), piminus.getMomentum().magnitude());
+
+                            double[] pipluspos = null;
+                            double[] piminuspos = null;
+                            if (c1IsPiPlus) {
+                                pipluspos = c1.getPosition();
+                                piminuspos = c2.getPosition();
+                            }
+                            if (c2IsPiPlus) {
+                                pipluspos = c2.getPosition();
+                                piminuspos = c1.getPosition();
+                            }
+                            aida.histogram2D("pi+ cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(pipluspos[0], pipluspos[1]);
+                            aida.histogram2D("pi- cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(piminuspos[0], piminuspos[1]);
                         }
+
                     }
                 }
             }
