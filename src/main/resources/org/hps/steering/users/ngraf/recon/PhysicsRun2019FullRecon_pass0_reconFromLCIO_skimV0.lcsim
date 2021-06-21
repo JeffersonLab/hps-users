@@ -27,8 +27,8 @@
         <driver name="ReconClusterer" /> 
         <driver name="CopyCluster" />
 
-<!--
         <!-- Hodoscope drivers -->
+<!--
         <driver name="HodoRunningPedestal"/>
         <driver name="HodoRawConverter"/>
  -->
