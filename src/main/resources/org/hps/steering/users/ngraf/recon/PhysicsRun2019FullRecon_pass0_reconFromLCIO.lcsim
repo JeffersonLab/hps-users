@@ -6,6 +6,11 @@
       @author Norman Graf <Norman.Graf@slac.stanford.edu>
       @author PF <pbutti@slac.stanford.edu>
     -->
+    <control>
+        <verbose>false</verbose>
+        <printDriverStatistics>true</printDriverStatistics>
+        <printDriversDetailed>true</printDriversDetailed>
+    </control>
     <execute>
         <!-- Enable the following if re-processing lcio files -->
         <driver name="PreCleanupDriver"/>
