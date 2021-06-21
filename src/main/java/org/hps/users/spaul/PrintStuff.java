@@ -1,15 +1,5 @@
 package org.hps.users.spaul;
 
-import java.util.List;
-import java.util.Map;
-
-import org.hps.datacat.DatacatUtilities;
-import org.hps.datacat.EvioDatasetIndex;
-
-import org.srs.datacat.model.DatasetModel;
-import org.srs.datacat.model.DatasetResultSetModel;
-import org.srs.datacat.model.dataset.DatasetWithViewModel;
-
 public class PrintStuff {
 	public static void main(String arg[]){
 		/*for(int run = 7000; run <= 8100; run++){

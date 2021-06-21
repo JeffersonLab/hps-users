@@ -16,21 +16,12 @@ import java.util.logging.Logger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.hps.conditions.database.DatabaseConditionsManager;
-import org.hps.conditions.svt.SvtAlignmentConstant;
-import org.hps.conditions.svt.SvtBiasConstant;
-import org.hps.conditions.svt.SvtBiasConstant.SvtBiasConstantCollection;
-import org.hps.conditions.svt.SvtMotorPosition;
-import org.hps.conditions.svt.SvtMotorPosition.SvtMotorPositionCollection;
-import org.hps.conditions.svt.SvtTimingConstants;
-import org.hps.rundb.RunManager;
 
 /**
  * Calculate the zeropoint value for each run from a myadump of scalerS2b

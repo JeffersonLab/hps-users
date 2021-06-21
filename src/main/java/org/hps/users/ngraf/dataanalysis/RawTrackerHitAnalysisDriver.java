@@ -1,6 +1,7 @@
 package org.hps.users.ngraf.dataanalysis;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,8 @@ import org.lcsim.detector.tracker.silicon.HpsSiSensor;
 import org.lcsim.detector.tracker.silicon.SiSensor;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.RawTrackerHit;
+import org.lcsim.event.Track;
+import org.lcsim.event.TrackerHit;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
 
@@ -40,14 +43,20 @@ public class RawTrackerHitAnalysisDriver extends Driver {
             throw new RuntimeException("Event is missing SVT hits collection!");
         }
 
+        // collections to add to the event
         List<RawTrackerHit> goodRawHits = new ArrayList<>();
         List<RawTrackerHit> badRawHits = new ArrayList<>();
+
+        //maps for immediate use
+        Map<Long, RawTrackerHit> goodRawHitMap = new HashMap<>();
+        Map<Long, RawTrackerHit> badRawHitMap = new HashMap<>();
 
         setupSensors(event);
         // organize lists of hits keyed by strip number into a map keyed by sensor name
         Map<String, Map<Integer, RawTrackerHit>> rawHitMap = new TreeMap<>();
 //        System.out.println("found " + rawHits.size() + " raw hits");
         for (RawTrackerHit hit : rawHits) {
+
             int strip = hit.getIdentifierFieldValue("strip");
             HpsSiSensor sensor = (HpsSiSensor) hit.getDetectorElement();
             String sensorName = sensor.getName();
@@ -79,8 +88,10 @@ public class RawTrackerHitAnalysisDriver extends Driver {
                 isBad = isBadHit(hits.get(firstChannel));
                 if (!isBad) {
                     goodRawHits.add(hits.get(firstChannel));
+                    goodRawHitMap.put(hits.get(firstChannel).getCellID(), hits.get(firstChannel));
                 } else {
                     badRawHits.add(hits.get(firstChannel));
+                    badRawHitMap.put(hits.get(firstChannel).getCellID(), hits.get(firstChannel));
                 }
             } else {
                 //get the first channel
@@ -103,12 +114,15 @@ public class RawTrackerHitAnalysisDriver extends Driver {
                         // only add isolated hits if they are not bad
                         if (!isBad) {
                             goodRawHits.add(hits.get(firstChannel));
+                            goodRawHitMap.put(hits.get(firstChannel).getCellID(), hits.get(firstChannel));
                         } else {
                             badRawHits.add(hits.get(firstChannel));
+                            badRawHitMap.put(hits.get(firstChannel).getCellID(), hits.get(firstChannel));
                         }
                     } else // add all non-isolated hits
                     {
                         goodRawHits.add(hits.get(firstChannel));
+                        goodRawHitMap.put(hits.get(firstChannel).getCellID(), hits.get(firstChannel));
                     }
                     deltaBefore = deltaChannel;
                     firstChannel = thisChannel;
@@ -120,12 +134,15 @@ public class RawTrackerHitAnalysisDriver extends Driver {
                     // only add isolated hits if they are not bad
                     if (!isBad) {
                         goodRawHits.add(hits.get(firstChannel));
+                        goodRawHitMap.put(hits.get(firstChannel).getCellID(), hits.get(firstChannel));
                     } else {
                         badRawHits.add(hits.get(firstChannel));
+                        badRawHitMap.put(hits.get(firstChannel).getCellID(), hits.get(firstChannel));
                     }
                 } else // add all non-isolated hits
                 {
                     goodRawHits.add(hits.get(firstChannel));
+                    goodRawHitMap.put(hits.get(firstChannel).getCellID(), hits.get(firstChannel));
                 }
             }
         }
@@ -141,13 +158,34 @@ public class RawTrackerHitAnalysisDriver extends Driver {
 //            System.out.println(sensor.getName() + " " + sensor.getLayerNumber() + " " + strip);
         }
         aida.histogram1D("Number of SVTRawTrackerHits", 100, 0., 1000.).fill(rawHits.size());
+
         aida.histogram1D("Number of good SVTRawTrackerHits", 100, 0., 1000.).fill(goodRawHits.size());
+        aida.histogram1D("Number of bad SVTRawTrackerHits", 100, 0., 1000.).fill(badRawHits.size());
+        aida.histogram1D("Number of good SVTRawTrackerHits - map", 100, 0., 1000.).fill(goodRawHits.size() - goodRawHitMap.size());
+        aida.histogram1D("Number of bad SVTRawTrackerHits - map", 100, 0., 1000.).fill(badRawHits.size() - badRawHitMap.size());
         aida.histogram2D("Number of SVTRawTrackerHits vs number of good SVTRawTrackerHits", 100, 0., 1000., 100, 0., 1000.).fill(rawHits.size(), goodRawHits.size());
 
         //hits are now collected by sensor and sorted in ascending order by strip
         // loop over hits, identify isolated single-strip hits
         // check if max possible amplitude is below our hit threshold
         // remove so we don't waste time fitting the waveforms for hits we'll never use.
+        //Track analysis here...
+        // Loop over tracks, check to see if any hits on tracks are labeled as bad hits...
+        List<Track> tracks = event.get(Track.class, "KalmanFullTracks");
+        for (Track t : tracks) {
+            List<TrackerHit> hits = t.getTrackerHits();
+            for (TrackerHit hit : hits) {
+                List<RawTrackerHit> trackRawHits = hit.getRawHits();
+                for (RawTrackerHit rth : trackRawHits) {
+                    // did we call this hit bad?
+                    if(badRawHitMap.containsKey(rth.getCellID()))
+                    {
+                        System.out.println("found hit on track called bad");
+                    }
+                }
+            }
+        }
+
     }
 
     private boolean isBadHit(RawTrackerHit hit) {
@@ -181,7 +219,8 @@ public class RawTrackerHitAnalysisDriver extends Driver {
     }
 
     private void setupSensors(EventHeader event) {
-        List<RawTrackerHit> rawTrackerHits = event.get(RawTrackerHit.class, "SVTRawTrackerHits");
+        List<RawTrackerHit> rawTrackerHits = event.get(RawTrackerHit.class,
+                "SVTRawTrackerHits");
         EventHeader.LCMetaData meta = event.getMetaData(rawTrackerHits);
         // Get the ID dictionary and field information.
         IIdentifierDictionary dict = meta.getIDDecoder().getSubdetector().getDetectorElement().getIdentifierHelper().getIdentifierDictionary();
