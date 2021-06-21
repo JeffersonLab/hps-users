@@ -27,10 +27,11 @@
         <driver name="ReconClusterer" /> 
         <driver name="CopyCluster" />
 
+<!--
         <!-- Hodoscope drivers -->
         <driver name="HodoRunningPedestal"/>
         <driver name="HodoRawConverter"/>
- 
+ -->
         <!-- SVT reconstruction drivers -->
         <driver name="RawTrackerHitSensorSetup"/>
         <driver name="RawTrackerHitFitterDriver" />
@@ -79,52 +80,7 @@
     <drivers>    
 	    
         <driver name="PreCleanupDriver" type="org.hps.analysis.dataquality.ReadoutCleanupDriver">
-            <collectionNames>
-                BeamspotConstrainedV0Candidates
-                BeamspotConstrainedV0Candidates_KF
-                BeamspotConstrainedV0Vertices
-                BeamspotConstrainedV0Vertices_KF
-                EcalCalHits
-                EcalClusters
-                EcalClustersCorr
-                EcalUncalHits
-                FinalStateParticles
-                FinalStateParticles_KF
-                GBLKinkData
-                GBLKinkDataRelations
-                GBLTracks
-                HelicalTrackHitRelations
-                HelicalTrackHits
-                HodoCalHits
-                HodoGenericClusters
-                KalmanFullTracks
-                KFGBLStripClusterData
-                KFGBLStripClusterDataRelations
-                KFTrackData
-                KFTrackDataRelations
-                MatchedToGBLTrackRelations
-                MatchedTracks
-                OtherElectrons
-                OtherElectrons
-                RFHits
-                RotatedHelicalTrackHitRelations
-                RotatedHelicalTrackHits
-                StripClusterer_SiTrackerHitStrip1D
-                SVTShapeFitParameters
-                TargetConstrainedV0Candidates
-                TargetConstrainedV0Candidates_KF
-                TargetConstrainedV0Vertices
-                TargetConstrainedV0Vertices_KF
-                TrackData
-                TrackDataRelations
-                UnconstrainedV0Candidates
-                UnconstrainedV0Candidates_KF
-                UnconstrainedV0Vertices
-                UnconstrainedV0Vertices_KF
-                UnconstrainedVcCandidates
-                UnconstrainedVcCandidates_KF
-                UnconstrainedVcVertices
-                UnconstrainedVcVertices_KF
+            <collectionNames>                BeamspotConstrainedV0Candidates                BeamspotConstrainedV0Candidates_KF                BeamspotConstrainedV0Vertices                BeamspotConstrainedV0Vertices_KF                EcalCalHits                EcalClusters                EcalClustersCorr                EcalUncalHits                FinalStateParticles                FinalStateParticles_KF                GBLKinkData                GBLKinkDataRelations                GBLTracks                HelicalTrackHitRelations                HelicalTrackHits                HodoCalHits                HodoGenericClusters                KalmanFullTracks                KFGBLStripClusterData                KFGBLStripClusterDataRelations                KFTrackData                KFTrackDataRelations                MatchedToGBLTrackRelations                MatchedTracks                OtherElectrons                OtherElectrons                RFHits                RotatedHelicalTrackHitRelations                RotatedHelicalTrackHits                StripClusterer_SiTrackerHitStrip1D                SVTShapeFitParameters                TargetConstrainedV0Candidates                TargetConstrainedV0Candidates_KF                TargetConstrainedV0Vertices                TargetConstrainedV0Vertices_KF                TrackData                TrackDataRelations                UnconstrainedV0Candidates                UnconstrainedV0Candidates_KF                UnconstrainedV0Vertices                UnconstrainedV0Vertices_KF                UnconstrainedVcCandidates                UnconstrainedVcCandidates_KF                UnconstrainedVcVertices               UnconstrainedVcVertices_KF
             </collectionNames> 
         </driver>
         
