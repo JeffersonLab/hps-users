@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lcsim xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="http://www.lcsim.org/schemas/lcsim/1.0/lcsim.xsd">
+    <!-- 
+      Steering file for running 2019 Reconstruction on readout data (LCIO or EVIO)
+      created:  9/24/19
+      @author Norman Graf <Norman.Graf@slac.stanford.edu>
+      @author PF <pbutti@slac.stanford.edu>
+    -->
+    <execute>
+        <!-- Enable the following if re-processing lcio files -->
+        <driver name="PreCleanupDriver"/> 
+        <driver name="LCIOWriter"/>
+    </execute>    
+    <drivers>     
+        <driver name="PreCleanupDriver" type="org.hps.analysis.dataquality.ReadoutCleanupDriver">
+            <collectionNames>
+                BeamspotConstrainedV0Candidates
+                BeamspotConstrainedV0Candidates_KF
+                BeamspotConstrainedV0Vertices
+                BeamspotConstrainedV0Vertices_KF
+                EcalCalHits
+                EcalClusters
+                EcalClustersCorr
+                EcalUncalHits
+                FinalStateParticles
+                FinalStateParticles_KF
+                GBLKinkData
+                GBLKinkDataRelations
+                GBLTracks
+                HelicalTrackHitRelations
+                HelicalTrackHits
+                HodoCalHits
+                HodoGenericClusters
+                KalmanFullTracks
+                KFGBLStripClusterData
+                KFGBLStripClusterDataRelations
+                KFTrackData
+                KFTrackDataRelations
+                MatchedToGBLTrackRelations
+                MatchedTracks
+                OtherElectrons
+                OtherElectrons
+                RFHits
+                RotatedHelicalTrackHitRelations
+                RotatedHelicalTrackHits
+                StripClusterer_SiTrackerHitStrip1D
+                SVTFittedRawTrackerHits
+                SVTShapeFitParameters
+                TargetConstrainedV0Candidates
+                TargetConstrainedV0Candidates_KF
+                TargetConstrainedV0Vertices
+                TargetConstrainedV0Vertices_KF
+                TrackData
+                UnconstrainedV0Candidates
+                UnconstrainedV0Candidates_KF
+                UnconstrainedV0Vertices
+                UnconstrainedV0Vertices_KF
+                UnconstrainedVcCandidates
+                UnconstrainedVcCandidates_KF
+                UnconstrainedVcVertices
+                UnconstrainedVcVertices_KF
+            </collectionNames> 
+        </driver>
+
+        <driver name="LCIOWriter" type="org.lcsim.util.loop.LCIODriver">
+            <outputFilePath>${outputFile}.slcio</outputFilePath>
+        </driver>       
+    </drivers>
+</lcsim>
