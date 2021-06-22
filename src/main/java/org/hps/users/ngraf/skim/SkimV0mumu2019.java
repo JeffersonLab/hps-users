@@ -360,7 +360,7 @@ public class SkimV0mumu2019 extends Driver {
         _minMassCut = d;
     }
 
-    public void set_maxMassCut(double d) {
+    public void setMaxMassCut(double d) {
         _maxMassCut = d;
     }
 }
