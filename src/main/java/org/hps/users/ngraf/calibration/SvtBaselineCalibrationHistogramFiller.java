@@ -29,7 +29,11 @@ public class SvtBaselineCalibrationHistogramFiller extends Driver {
             int channel = hit.getIdentifierFieldValue("strip");
             short adc0 = hit.getADCValues()[0];
             String sensorName = ((HpsSiSensor) hit.getDetectorElement()).getName();
-            aida.histogram2D(run + " " + sensorName + " channel id vs APV25 channel 0", 640, 0, 640., 500, 3000., 7000.).fill(channel, adc0);
+            if (sensorName.contains("_L1") || sensorName.contains("_L2")) {
+                aida.histogram2D(run + " " + sensorName + " channel id vs APV25 channel 0", 512, 0, 512., 500, 3500., 7000.).fill(channel, adc0);
+            } else {
+                aida.histogram2D(run + " " + sensorName + " channel id vs APV25 channel 0", 640, 0, 640., 500, 3500., 7000.).fill(channel, adc0);
+            }
         }
     }
 

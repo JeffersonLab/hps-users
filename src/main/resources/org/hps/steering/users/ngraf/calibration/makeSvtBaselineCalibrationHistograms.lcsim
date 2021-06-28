@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lcsim xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+       xs:noNamespaceSchemaLocation="http://www.lcsim.org/schemas/lcsim/1.0/lcsim.xsd">
+    <control>
+        <printDriverStatistics>true</printDriverStatistics>
+        <printDriversDetailed>true</printDriversDetailed>
+    </control>
+    <!--
+        <inputFiles>
+            <fileList>${inputFileList}</fileList>
+        </inputFiles>
+    -->
+    <execute>
+        <driver name="EventMarkerDriver"/>
+        <driver name="ProcessEvent"/>
+        <!-- Save in aida and/or root format -->
+        <!--        <driver name="AidaToRootSaveDriver"/> -->
+        <driver name="AidaSaveDriver"/>
+        <!-- <driver name="Writer"/> -->
+    </execute>
+    <drivers>
+        <!-- Driver to give some feedback on progress -->
+        <driver name="EventMarkerDriver"
+                type="org.lcsim.job.EventMarkerDriver">
+            <eventInterval>1000</eventInterval>
+        </driver>
+        <!-- Driver to process events -->
+        <driver name="ProcessEvent"
+                type="org.hps.users.ngraf.calibration.SvtBaselineCalibrationHistogramFiller">
+        </driver>
+        <!-- Driver to write output aida file -->
+        <driver name="AidaSaveDriver" type="org.lcsim.job.AidaSaveDriver">
+            <outputFileName>${outputFile}.aida</outputFileName>
+        </driver>
+        <!-- Driver to write output root file -->
+        <driver name="AidaToRootSaveDriver" type="org.lcsim.job.AidaSaveDriver">
+            <outputFileName>${outputFile}.root</outputFileName>
+        </driver>
+        <!-- Driver to write output slcio file -->
+        <driver name="Writer"
+                type="org.lcsim.util.loop.LCIODriver">
+            <outputFilePath>${outputFile}.slcio</outputFilePath>
+        </driver>
+    </drivers>
+</lcsim>
