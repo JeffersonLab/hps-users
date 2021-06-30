@@ -21,6 +21,10 @@ public class SvtBaselineCalibrationHistogramFiller extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
 
+    private int _nYbins = 500;
+    private double _yLo = 3500.;
+    private double _yHi = 7000.;
+
     protected void process(EventHeader event) {
         int run = event.getRunNumber();
         List<RawTrackerHit> rawTrackerHits = event.get(RawTrackerHit.class, "SVTRawTrackerHits");
@@ -30,9 +34,9 @@ public class SvtBaselineCalibrationHistogramFiller extends Driver {
             short adc0 = hit.getADCValues()[0];
             String sensorName = ((HpsSiSensor) hit.getDetectorElement()).getName();
             if (sensorName.contains("_L1") || sensorName.contains("_L2")) {
-                aida.histogram2D(run + " " + sensorName + " channel id vs APV25 channel 0", 512, 0, 512., 500, 3500., 7000.).fill(channel, adc0);
+                aida.histogram2D(run + " " + sensorName + " channel id vs APV25 channel 0", 512, 0, 512., _nYbins, _yLo, _yHi).fill(channel, adc0);
             } else {
-                aida.histogram2D(run + " " + sensorName + " channel id vs APV25 channel 0", 640, 0, 640., 500, 3500., 7000.).fill(channel, adc0);
+                aida.histogram2D(run + " " + sensorName + " channel id vs APV25 channel 0", 640, 0, 640., _nYbins, _yLo, _yHi).fill(channel, adc0);
             }
         }
     }
@@ -70,5 +74,17 @@ public class SvtBaselineCalibrationHistogramFiller extends Driver {
                 throw new RuntimeException("No sensor was found for hit with stripped ID <0x" + Long.toHexString(strippedId.getValue()) + ">.");
             }
         }
+    }
+
+    public void setNYbins(int i) {
+        _nYbins = i;
+    }
+
+    public void setYLo(double d) {
+        _yLo = d;
+    }
+
+    public void setYHi(double d) {
+        _yHi = d;
     }
 }
