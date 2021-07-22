@@ -62,7 +62,7 @@ public class SvtOnlineBaselineCalibrationFitter {
     private int _minSliceEntries = 1000;
 
     public SvtOnlineBaselineCalibrationFitter(String histogramFileName) {
-        _runNumber = Integer.parseInt(histogramFileName.split("/")[8].split("_")[1]);
+        _runNumber = Integer.parseInt(histogramFileName.substring(histogramFileName.indexOf("hpssvt_") + 7, histogramFileName.indexOf("hpssvt_") + 7 + 6));
         _histogramFileName = histogramFileName;
         File inputFile = new File(_histogramFileName);
         _af = _aida.analysisFactory();
@@ -73,7 +73,7 @@ public class SvtOnlineBaselineCalibrationFitter {
             Logger.getLogger(SvtBaselineCalibrationAnalysis.class.getName()).log(Level.SEVERE, "File " + _histogramFileName + " not found", ex);
         }
         try {
-            _outputTree = _af.createTreeFactory().create("failedFits_"+_runNumber+".aida", "xml", false, true);
+            _outputTree = _af.createTreeFactory().create("failedFits_" + _runNumber + ".aida", "xml", false, true);
         } catch (IOException | IllegalArgumentException ex) {
             Logger.getLogger(SvtBaselineCalibrationAnalysis.class.getName()).log(Level.SEVERE, "Could not create failedFits.aida", ex);
 
