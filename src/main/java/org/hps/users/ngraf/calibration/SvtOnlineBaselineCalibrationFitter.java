@@ -70,12 +70,12 @@ public class SvtOnlineBaselineCalibrationFitter {
         try {
             _tree = _af.createTreeFactory().create(inputFile.getAbsolutePath());
         } catch (IllegalArgumentException | IOException ex) {
-            Logger.getLogger(SvtBaselineCalibrationAnalysis.class.getName()).log(Level.SEVERE, "File " + _histogramFileName + " not found", ex);
+            Logger.getLogger(SvtOnlineBaselineCalibrationFitter.class.getName()).log(Level.SEVERE, "File " + _histogramFileName + " not found", ex);
         }
         try {
             _outputTree = _af.createTreeFactory().create("failedFits_" + _runNumber + ".aida", "xml", false, true);
         } catch (IOException | IllegalArgumentException ex) {
-            Logger.getLogger(SvtBaselineCalibrationAnalysis.class.getName()).log(Level.SEVERE, "Could not create failedFits.aida", ex);
+            Logger.getLogger(SvtOnlineBaselineCalibrationFitter.class.getName()).log(Level.SEVERE, "Could not create failedFits.aida", ex);
 
         }
         _outputhf = _af.createHistogramFactory(_outputTree);
