@@ -106,7 +106,7 @@ public class SvtOnlineBaselineCalibrationFitter {
     }
 
     public static void main(String[] args) {
-        String fileName = "D://work/hps/analysis/physrun2019/unblinded/svtBaselineCalibration/hpssvt_010629_onlinebaseline.aida";
+        String fileName = "D://work/hps/analysis/physrun2019/unblinded/svtBaselineCalibration/hpssvt_010578_onlinebaseline.aida";
         if (args.length > 0) {
             fileName = args[0];
         }
@@ -208,7 +208,7 @@ public class SvtOnlineBaselineCalibrationFitter {
         //accumulate data for the gaussian fit...
         WeightedObservedPoints obs = new WeightedObservedPoints();
         for (int i = 0; i < nBins - 1; ++i) {
-            if (slice.binHeight(i) > 0.) {
+            if (slice.binHeight(i) > 5.) {
                 // this is a good bin
 //                System.out.println("bin mean " + slice.binMean(i) + " entries " + slice.binEntries(i));
                 obs.add(slice.binError(i), slice.binMean(i), slice.binEntries(i));
