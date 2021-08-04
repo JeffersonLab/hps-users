@@ -12,9 +12,13 @@ import org.lcsim.util.aida.AIDA;
 
 public class Singles0EcalClusterAnalysis2019 extends Driver {
 
+    private int _numberOfEventsSelected;
+    private int _numberOfEventsProcessed = 0;
     private AIDA aida = AIDA.defaultInstance();
 
     public void process(EventHeader event) {
+        boolean skipEvent = true;
+        _numberOfEventsProcessed++;
         boolean triggered = false;
         if (event.hasCollection(GenericObject.class, "TSBank")) {
             List<GenericObject> triggerList = event.get(GenericObject.class, "TSBank");
@@ -25,11 +29,12 @@ public class Singles0EcalClusterAnalysis2019 extends Driver {
                 }
             }
         }
-        aida.histogram1D("Triggered singles0",2,-0.5,1.5).fill(triggered ? 1 : 0);
+        aida.histogram1D("Triggered singles0", 2, -0.5, 1.5).fill(triggered ? 1 : 0);
         if (triggered) {
+            skipEvent = false;
             if (event.hasCollection(Cluster.class, "EcalClustersCorr")) {
                 List<Cluster> clusters = event.get(Cluster.class, "EcalClustersCorr");
-                aida.histogram1D("Number of Clusters in Event", 10, 0., 10.).fill(clusters.size());
+                aida.histogram1D("Number of Clusters in triggered Event", 10, 0., 10.).fill(clusters.size());
                 if (clusters.size() == 1) {
                     aida.tree().mkdirs("Singles0 single cluster");
                     aida.tree().cd("Singles0 single cluster");
@@ -45,10 +50,23 @@ public class Singles0EcalClusterAnalysis2019 extends Driver {
                         String half = cluster.getPosition()[1] > 0. ? "Top " : "Bottom ";
                         aida.histogram1D(half + "Cluster Energy", 100, 0., 5.).fill(cluster.getEnergy());
                         aida.histogram1D("Cluster Energy", 100, 0., 5.0).fill(cluster.getEnergy());
+                        //Mollers?
+                        if (energy > 0.6 && ix < -10) {
+                            aida.histogram1D("Cluster Energy signal region", 100, 0., 5.0).fill(cluster.getEnergy());
+                        }
                     }
                     aida.tree().cd("..");
                 }
             }
         }
+        if (skipEvent) {
+            throw new Driver.NextEventException();
+        } else {
+            _numberOfEventsSelected++;
+        }
+    }
+
+    protected void endOfData() {
+        System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
     }
 }
