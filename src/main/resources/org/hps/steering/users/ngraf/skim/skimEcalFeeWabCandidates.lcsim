@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lcsim xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+       xs:noNamespaceSchemaLocation="http://www.lcsim.org/schemas/lcsim/1.0/lcsim.xsd">
+    <control>
+        <printDriverStatistics>true</printDriverStatistics>
+        <printDriversDetailed>true</printDriversDetailed>
+    </control>
+
+    <execute>
+        <driver name="EventMarkerDriver"/>
+        <driver name="StripFee"/>
+        <driver name="Writer"/>
+    </execute>
+    <drivers>
+        <!-- Driver to give some feedback on progress -->
+        <driver name="EventMarkerDriver"
+                type="org.lcsim.job.EventMarkerDriver">
+            <eventInterval>1000</eventInterval>
+        </driver>
+        <!-- Driver to strip events -->
+        <driver name="StripFee" 
+                type="org.hps.users.ngraf.skim.SkimEcalFeeWabTrident2019">
+            <minClusterEnergy>4.0</minClusterEnergy> 
+            <minSeedHitEnergy>2.6</minSeedHitEnergy>
+            <maxNClusters>3</maxNClusters>
+            <requireFiducialFee>false</requireFiducialFee>
+            <requireFiducialWab>true</requireFiducialWab>
+        </driver>
+        <!-- Driver to write output slcio file -->
+        <driver name="Writer"
+                type="org.lcsim.util.loop.LCIODriver">
+            <outputFilePath>${outputFile}.slcio</outputFilePath>
+        </driver>
+    </drivers>
+</lcsim>
