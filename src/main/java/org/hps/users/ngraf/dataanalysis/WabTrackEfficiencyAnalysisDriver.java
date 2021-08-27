@@ -52,7 +52,8 @@ public class WabTrackEfficiencyAnalysisDriver extends Driver {
             List<Cluster> clusters = event.get(Cluster.class, "EcalClustersCorr");
             int nClusters = clusters.size();
             aida.histogram1D("number of Clusters", 5, -0.5, 4.5).fill(nClusters);
-            if (nClusters == 2) {
+            // require two and only two clusters and eliminate FEEs
+            if (nClusters == 2 && clusters.get(0).getEnergy()<3.5) {
                 Cluster electronCluster = null;
                 double esum = 0.;
                 for (Cluster cluster : clusters) {

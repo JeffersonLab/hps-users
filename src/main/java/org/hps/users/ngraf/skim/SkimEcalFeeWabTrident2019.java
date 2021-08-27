@@ -109,24 +109,26 @@ public class SkimEcalFeeWabTrident2019 extends Driver {
         if (ecalClusters.size() == 2) {
             Cluster c1 = ecalClusters.get(0);
             double e1 = c1.getEnergy();
-            Hep3Vector pos1 = new BasicHep3Vector(c1.getPosition());
-            double t1 = ClusterUtilities.getSeedHitTime(c1);
+            // eliminate FEEs...
+            if (e1 < 3.5) {
+                Hep3Vector pos1 = new BasicHep3Vector(c1.getPosition());
+                double t1 = ClusterUtilities.getSeedHitTime(c1);
 
-            Cluster c2 = ecalClusters.get(1);
-            double e2 = c2.getEnergy();
-            double t2 = ClusterUtilities.getSeedHitTime(c2);
-            //
-            double deltaT = t1 - t2;
-            if (abs(deltaT) < 2.) {
-                double esum = e1 + e2;
-                Hep3Vector pos2 = new BasicHep3Vector(c2.getPosition());
+                Cluster c2 = ecalClusters.get(1);
+                double e2 = c2.getEnergy();
+                double t2 = ClusterUtilities.getSeedHitTime(c2);
+                //
+                double deltaT = t1 - t2;
+                if (abs(deltaT) < 2.) {
+                    double esum = e1 + e2;
+                    Hep3Vector pos2 = new BasicHep3Vector(c2.getPosition());
 //            aida.histogram2D("two cluster e1 vs e2", 100, 0., 5., 100, 0., 5.).fill(e1, e2);
 //            aida.histogram1D("two cluster e1 + e2", 100, 0., 5.).fill(esum);
-                // opposite hemispheres
-                if (pos1.x() * pos2.x() < 0. && pos1.y() * pos2.y() < 0.) {
+                    // opposite hemispheres
+                    if (pos1.x() * pos2.x() < 0. && pos1.y() * pos2.y() < 0.) {
 //                aida.histogram2D("two opposite cluster e1 vs e2", 100, 0., 5., 100, 0., 5.).fill(e1, e2);
 //                aida.histogram1D("two opposite cluster e1 + e2", 100, 0., 5.).fill(esum);
-                    if (esum > _esumCut) {
+                        if (esum > _esumCut) {
 //                    aida.histogram2D("two opposite esum > " + _esumCut + " cluster e1 vs e2", 100, 0., 5., 100, 0.,
 //                            5.).fill(e1, e2);
 //                    aida.histogram1D("two opposite esum > " + _esumCut + " cluster e1 + e2", 100, _esumCut, 5.)
@@ -135,47 +137,48 @@ public class SkimEcalFeeWabTrident2019 extends Driver {
 //                            -90.0, 90.0).fill(pos1.x(), pos1.y());
 //                    aida.histogram2D("two opposite esum > " + _esumCut + " cluster2 x vs y", 320, -270.0, 370.0, 90,
 //                            -90.0, 90.0).fill(pos2.x(), pos2.y());
-                        boolean e1IsFiducial = TriggerModule.inFiducialRegion(c1);
-                        boolean e2IsFiducial = TriggerModule.inFiducialRegion(c2);
-                        isWabCandidate = true;
-                        boolean wabIsFiducial = e1IsFiducial && e2IsFiducial;
-                        if (_requireFiducialWab && !wabIsFiducial) {
-                            isWabCandidate = false;
-                        }
-                        if (isWabCandidate) {
-                            if (wabIsFiducial) {
-                                aida.tree().mkdirs("fiducial");
-                                aida.tree().cd("fiducial");
+                            boolean e1IsFiducial = TriggerModule.inFiducialRegion(c1);
+                            boolean e2IsFiducial = TriggerModule.inFiducialRegion(c2);
+                            isWabCandidate = true;
+                            boolean wabIsFiducial = e1IsFiducial && e2IsFiducial;
+                            if (_requireFiducialWab && !wabIsFiducial) {
+                                isWabCandidate = false;
                             }
-                            aida.histogram1D("opposite esum > " + _esumCut + " cluster e1", 100, 0., 5.)
-                                    .fill(e1);
-                            aida.histogram1D("opposite esum > " + _esumCut + " cluster e2", 100, 0., 5.)
-                                    .fill(e2);
-                            aida.histogram2D("opposite esum > " + _esumCut + " cluster e1 vs e2", 100, 0.,
-                                    5., 100, 0., 5.).fill(e1, e2);
-                            aida.histogram1D("opposite esum > " + _esumCut + " cluster e1 + e2", 100,
-                                    _esumCut, 5.).fill(esum);
-                            aida.histogram2D("opposite esum > " + _esumCut + " cluster1 x vs y", 320,
-                                    -270.0, 370.0, 90, -90.0, 90.0).fill(pos1.x(), pos1.y());
-                            aida.histogram2D("opposite esum > " + _esumCut + " cluster2 x vs y", 320,
-                                    -270.0, 370.0, 90, -90.0, 90.0).fill(pos2.x(), pos2.y());
-                            aida.histogram1D("cluster delta time", 100, -5., 5.).fill(deltaT);
-                            CalorimeterHit seed = c1.getCalorimeterHits().get(0);
-                            int ix = seed.getIdentifierFieldValue("ix");
-                            int iy = seed.getIdentifierFieldValue("iy");
-                            aida.histogram2D("cluster1 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-                            seed = c2.getCalorimeterHits().get(0);
-                            ix = seed.getIdentifierFieldValue("ix");
-                            iy = seed.getIdentifierFieldValue("iy");
-                            aida.histogram2D("cluster2 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-                            if (wabIsFiducial) {
-                                aida.tree().cd("..");
+                            if (isWabCandidate) {
+                                if (wabIsFiducial) {
+                                    aida.tree().mkdirs("fiducial");
+                                    aida.tree().cd("fiducial");
+                                }
+                                aida.histogram1D("opposite esum > " + _esumCut + " cluster e1", 100, 0., 5.)
+                                        .fill(e1);
+                                aida.histogram1D("opposite esum > " + _esumCut + " cluster e2", 100, 0., 5.)
+                                        .fill(e2);
+                                aida.histogram2D("opposite esum > " + _esumCut + " cluster e1 vs e2", 100, 0.,
+                                        5., 100, 0., 5.).fill(e1, e2);
+                                aida.histogram1D("opposite esum > " + _esumCut + " cluster e1 + e2", 100,
+                                        _esumCut, 5.).fill(esum);
+                                aida.histogram2D("opposite esum > " + _esumCut + " cluster1 x vs y", 320,
+                                        -270.0, 370.0, 90, -90.0, 90.0).fill(pos1.x(), pos1.y());
+                                aida.histogram2D("opposite esum > " + _esumCut + " cluster2 x vs y", 320,
+                                        -270.0, 370.0, 90, -90.0, 90.0).fill(pos2.x(), pos2.y());
+                                aida.histogram1D("cluster delta time", 100, -5., 5.).fill(deltaT);
+                                CalorimeterHit seed = c1.getCalorimeterHits().get(0);
+                                int ix = seed.getIdentifierFieldValue("ix");
+                                int iy = seed.getIdentifierFieldValue("iy");
+                                aida.histogram2D("cluster1 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                                seed = c2.getCalorimeterHits().get(0);
+                                ix = seed.getIdentifierFieldValue("ix");
+                                iy = seed.getIdentifierFieldValue("iy");
+                                aida.histogram2D("cluster2 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                                if (wabIsFiducial) {
+                                    aida.tree().cd("..");
+                                }
                             }
-                        }
-                    }
-                }
-            }
-        }
+                        } // end of check on esum
+                    } // end of check on opposite hemispheres
+                } // end of check on deltaT
+            } // end of check on e1 < 3.% to get rid of FEEs
+        } // end of check on 2 clusters
         aida.tree().cd("..");
         return isWabCandidate;
     }
