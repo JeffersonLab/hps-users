@@ -167,6 +167,11 @@ public class WabTrackEfficiencyAnalysisDriver extends Driver {
                         aida.tree().cd("..");
                     }
                 }
+                // also write out any event missing a track...
+                if (kfEventType.equals("gg") || gblEventType.equals("gg")) {
+                    skipEvent = false;
+                    aida.histogram1D("Cluster esum GBL " + gblEventType + " KF " + kfEventType, 100, 0., 5.5).fill(esum);
+                }
             } // end of check on two clusters
         } // end of check on skipit
         if (skipEvent) {

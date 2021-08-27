@@ -29,12 +29,21 @@ public class SkimEcalFeeWabTrident2019 extends Driver {
     private boolean _requireFiducialFee = false;
     private boolean _requireFiducialWab = true;
 
+    private boolean _skimFee = true;
+    private boolean _skimWab = true;
+
     protected void process(EventHeader event) {
         boolean skipEvent = true;
         _numberOfEventsProcessed++;
         List<Cluster> ecalClusters = event.get(Cluster.class, "EcalClustersCorr");
-        boolean isWabCandidate = isWabCandidate(ecalClusters);
-        boolean isFeeCandidate = isFeeCandidate(ecalClusters);
+        boolean isWabCandidate = false;
+        if (_skimWab) {
+            isWabCandidate = isWabCandidate(ecalClusters);
+        }
+        boolean isFeeCandidate = false;
+        if (_skimFee) {
+            isFeeCandidate = isFeeCandidate(ecalClusters);
+        }
         //TODO implement calorimeter-only trident selection
         if (isWabCandidate || isFeeCandidate) {
             skipEvent = false;
@@ -196,4 +205,11 @@ public class SkimEcalFeeWabTrident2019 extends Driver {
         _requireFiducialWab = b;
     }
 
+    public void setSkimFee(boolean b) {
+        _skimFee = b;
+    }
+
+    public void setSkimWab(boolean b) {
+        _skimWab = b;
+    }
 }
