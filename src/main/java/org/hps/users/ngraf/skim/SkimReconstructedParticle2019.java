@@ -15,8 +15,9 @@ public class SkimReconstructedParticle2019 extends Driver {
     private boolean _writeRunAndEventNumbers = false;
     private double _minMomentumCut = 0.5;
     private double _maxMomentumCut = 10.;
+    private double _minClusterEnergyCut = 2.0;
     private int _minNumberOfHitsOnTrack = 6;
-    private int _maxNumberOfReconstructedParticles = 1;
+    private int _maxNumberOfReconstructedParticles = 5;
     private int _pdgId = 11;
     private boolean _requireCluster = true;
     private int _numberOfEventsSelected = 0;
@@ -39,8 +40,12 @@ public class SkimReconstructedParticle2019 extends Driver {
                         double mom = rp.getMomentum().magnitude();
                         if (mom >= _minMomentumCut && mom <= _maxMomentumCut) {
                             skipEvent = false;
-                            if (_requireCluster && rp.getClusters().isEmpty()) {
-                                skipEvent = true;
+                            if (_requireCluster) {
+                                if (rp.getClusters().isEmpty()) {
+                                    skipEvent = true;
+                                } else if (rp.getClusters().get(0).getEnergy() < _minClusterEnergyCut) {
+                                    skipEvent = true;
+                                }
                             }
                             if (!rp.getTracks().isEmpty()) {
                                 if (rp.getTracks().get(0).getTrackerHits().size() < _minNumberOfHitsOnTrack) {
@@ -108,6 +113,10 @@ public class SkimReconstructedParticle2019 extends Driver {
 
     public void setReconstructedParticleCollectionName(String s) {
         _reconstructedParticleCollectionName = s;
+    }
+
+    public void setMinClusterEnergyCut(double d) {
+        _minClusterEnergyCut = d;
     }
 
     @Override
