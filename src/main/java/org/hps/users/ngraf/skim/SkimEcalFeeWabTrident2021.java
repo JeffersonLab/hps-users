@@ -3,6 +3,8 @@ package org.hps.users.ngraf.skim;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
 import static java.lang.Math.abs;
+import static java.lang.Math.sqrt;
+import java.util.ArrayList;
 import java.util.List;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.record.triggerbank.TriggerModule;
@@ -31,9 +33,12 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
     private double _cluster1MinEnergy = 1.8;
     private double _cluster1MaxEnergy = 2.8;
     private double _cluster2MinEnergy = 0.5;
+    private double _minTridentClusterEnergy = 0.5;
+    private double _maxTridentClusterEnergy = 2.5;
 
     private boolean _skimFee = true;
     private boolean _skimWab = true;
+    private boolean _skimTrident = true;
 
     protected void process(EventHeader event) {
         boolean skipEvent = true;
@@ -47,8 +52,12 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
         if (_skimFee) {
             isFeeCandidate = isFeeCandidate(ecalClusters);
         }
+        boolean isTridentCandidate = false;
+        if (_skimTrident) {
+            isTridentCandidate = isTridentCandidate(ecalClusters);
+        }
         //TODO implement calorimeter-only trident selection
-        if (isWabCandidate || isFeeCandidate) {
+        if (isWabCandidate || isFeeCandidate || isTridentCandidate) {
             skipEvent = false;
         }
         if (skipEvent) {
@@ -188,6 +197,79 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
         return isWabCandidate;
     }
 
+    private boolean isTridentCandidate(List<Cluster> ecalClusters) {
+        boolean isTridentCandidate = false;
+        // let's start by requiring two and only two clusters, in opposite hemispheres,
+        // whose energies sum to the beam energy
+        aida.tree().mkdirs("trident candidate analysis");
+        aida.tree().cd("trident candidate analysis");
+        aida.histogram1D("number of clusters", 10, -0.5, 9.5).fill(ecalClusters.size());
+        if (ecalClusters.size() > 2) {
+            // positrons defined as clusters with x>100
+            List<Cluster> positrons = new ArrayList<>();
+            //electrons defined as clusters with x<0
+            List<Cluster> electrons = new ArrayList<>();
+            for (Cluster cluster : ecalClusters) {
+                // remove FEEs
+                if (cluster.getEnergy() > _minTridentClusterEnergy && cluster.getEnergy() < _maxTridentClusterEnergy) {
+                    if (cluster.getPosition()[0] > 100.) {
+                        positrons.add(cluster);
+                    }
+                    if (cluster.getPosition()[0] < 0.) {
+                        electrons.add(cluster);
+                    }
+                }
+            }
+            // do we have at least one positron and two electron clusters?
+
+            aida.histogram1D("number of electrons", 10, -0.5, 9.5).fill(electrons.size());
+            aida.histogram1D("number of positrons", 10, -0.5, 9.5).fill(positrons.size());
+            aida.histogram2D("number of positrons vs electrons", 10, -0.5, 9.5, 10, -0.5, 9.5).fill(positrons.size(), electrons.size());
+
+            if (positrons.size() > 0 && electrons.size() > 1) {
+                List<Cluster> tridentClusters = new ArrayList<>();
+                // check that they are in time
+                for (Cluster pos : positrons) {
+                    double t1 = ClusterUtilities.getSeedHitTime(pos);
+                    List<Cluster> inTimeElectronClusters = new ArrayList<>();
+                    for (Cluster ele : electrons) {
+                        double t2 = ClusterUtilities.getSeedHitTime(ele);
+                        if (abs(t1 - t2) < 2.) {
+                            inTimeElectronClusters.add(ele);
+                        }
+                    }
+                    // do we have two electron clusters in time with the positron?
+                    aida.histogram1D("number of in-time electrons", 10, -0.5, 9.5).fill(inTimeElectronClusters.size());
+                    if (inTimeElectronClusters.size() == 2) {
+                        tridentClusters.add(pos);
+                        tridentClusters.addAll(inTimeElectronClusters);
+                    }
+                }
+                // do we have three in-time clusters?
+                if (tridentClusters.size() == 3) {
+                    double esum = 0.;
+                    double pysum = 0.;
+                    //let's look at the kinematics.
+                    for (Cluster c : tridentClusters) {
+                        esum += c.getEnergy();
+                        pysum += c.getEnergy() * sinTheta(c.getPosition());
+                    }
+                    aida.histogram1D("trident esum", 100, 0., 10.).fill(esum);
+                    aida.histogram1D("trident pysum", 100, -1.0, 1.0).fill(pysum);
+                    if (esum > 2. && esum < 5. && abs(pysum) < 0.2) {
+                        isTridentCandidate = true;
+                    }
+                }
+            }
+        } // end of check on 2 clusters
+        aida.tree().cd("..");
+        return isTridentCandidate;
+    }
+
+    private double sinTheta(double[] p) {
+        return p[1] / sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
+    }
+
     @Override
     protected void endOfData() {
         System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
@@ -219,6 +301,10 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
 
     public void setSkimWab(boolean b) {
         _skimWab = b;
+    }
+
+    public void setSkimTrident(boolean b) {
+        _skimTrident = b;
     }
 
     public void setCluster1MinEnergy(double d) {
