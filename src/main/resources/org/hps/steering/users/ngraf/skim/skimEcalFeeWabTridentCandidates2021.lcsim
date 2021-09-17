@@ -25,6 +25,7 @@
             <maxNClusters>3</maxNClusters>
             <skimFee>true</skimFee>
             <skimWab>true</skimWab>
+            <skimTrident>true</skimTrident>
             <requireFiducialFee>true</requireFiducialFee>
             <requireFiducialWab>true</requireFiducialWab>
             <cluster1MinEnergy>1.8</cluster1MinEnergy>

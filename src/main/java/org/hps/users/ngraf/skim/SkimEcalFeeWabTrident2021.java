@@ -210,7 +210,7 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
             //electrons defined as clusters with x<0
             List<Cluster> electrons = new ArrayList<>();
             for (Cluster cluster : ecalClusters) {
-                // remove FEEs
+                // remove FEEs and low energy dross
                 if (cluster.getEnergy() > _minTridentClusterEnergy && cluster.getEnergy() < _maxTridentClusterEnergy) {
                     if (cluster.getPosition()[0] > 100.) {
                         positrons.add(cluster);
