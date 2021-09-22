@@ -24,6 +24,7 @@ public class WabCalibrationForMollers extends Driver {
     private int _numberOfEventsProcessed = 0;
 
     protected void process(EventHeader event) {
+        _numberOfEventsProcessed++;
         boolean skipEvent = true;
         // select events with two and only two clusters, one of which is an
         // electron in the Moller fiducial region and the other is a photon in
@@ -54,6 +55,7 @@ public class WabCalibrationForMollers extends Driver {
                 }
                 if (electron != null && photon != null) {
                     skipEvent = false;
+                    _numberOfEventsSelected++;
                     Cluster eclus = electron.getClusters().get(0);
                     double electronEnergy = electron.getEnergy();
                     double electronMomentum = electron.getMomentum().magnitude();
@@ -66,7 +68,7 @@ public class WabCalibrationForMollers extends Driver {
                     aida.histogram1D("electron momentum " + torb, 100, 0., 5.).fill(electron.getMomentum().magnitude());
 
                     double EoverP = electronEnergy / electronMomentum;
-                    aida.profile1D("EoverP vs p profile " + torb, 50, 1., 3.).fill(electronMomentum, EoverP);
+                    aida.profile1D("EoverP vs p profile " + torb, 50, 1., 4.).fill(electronMomentum, EoverP);
                     Cluster pclus = photon.getClusters().get(0);
                     double photonEnergy = photon.getEnergy();
                     int ix = eclus.getCalorimeterHits().get(0).getIdentifierFieldValue("ix");
