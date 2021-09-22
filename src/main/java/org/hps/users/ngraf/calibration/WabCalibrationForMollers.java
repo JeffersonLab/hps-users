@@ -55,7 +55,6 @@ public class WabCalibrationForMollers extends Driver {
                 }
                 if (electron != null && photon != null) {
                     skipEvent = false;
-                    _numberOfEventsSelected++;
                     Cluster eclus = electron.getClusters().get(0);
                     double electronEnergy = electron.getEnergy();
                     double electronMomentum = electron.getMomentum().magnitude();
@@ -85,6 +84,11 @@ public class WabCalibrationForMollers extends Driver {
                     aida.histogram1D("pesum " + torb, 100, 2., 5.).fill(pesum);
                 }
             }
+        }
+        if (skipEvent) {
+            throw new Driver.NextEventException();
+        } else {
+            _numberOfEventsSelected++;
         }
     }
 
