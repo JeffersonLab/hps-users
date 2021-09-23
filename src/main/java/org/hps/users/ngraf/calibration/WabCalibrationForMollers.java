@@ -57,7 +57,6 @@ public class WabCalibrationForMollers extends Driver {
                     }
                 }
                 if (electron != null && photon != null) {
-                    skipEvent = false;
                     Cluster eclus = electron.getClusters().get(0);
                     Cluster pclus = photon.getClusters().get(0);
                     // are the clusters in-time?
@@ -68,6 +67,7 @@ public class WabCalibrationForMollers extends Driver {
                         Hep3Vector pos2 = new BasicHep3Vector(pclus.getPosition());
                         // opposite hemispheres
                         if (pos1.x() * pos2.x() < 0. && pos1.y() * pos2.y() < 0.) {
+                            skipEvent = false;
                             double electronEnergy = electron.getEnergy();
                             double electronMomentum = electron.getMomentum().magnitude();
                             boolean electronIsTop = eclus.getPosition()[1] > 0 ? true : false;
