@@ -1,7 +1,10 @@
 package org.hps.users.ngraf.calibration;
 
+import hep.physics.vec.BasicHep3Vector;
+import hep.physics.vec.Hep3Vector;
 import static java.lang.Math.abs;
 import java.util.List;
+import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.record.triggerbank.TriggerModule;
 import org.lcsim.event.CalorimeterHit;
 import org.lcsim.event.Cluster;
@@ -56,32 +59,61 @@ public class WabCalibrationForMollers extends Driver {
                 if (electron != null && photon != null) {
                     skipEvent = false;
                     Cluster eclus = electron.getClusters().get(0);
-                    double electronEnergy = electron.getEnergy();
-                    double electronMomentum = electron.getMomentum().magnitude();
-                    boolean electronIsTop = eclus.getPosition()[1] > 0 ? true : false;
-                    String torb = electronIsTop ? "top" : "bottom";
-                    Track t = electron.getTracks().get(0);
-                    aida.histogram1D("electron energy", 100, 0., 5.).fill(electron.getEnergy());
-
-                    aida.histogram1D("electron energy " + torb, 100, 0., 5.).fill(electron.getEnergy());
-                    aida.histogram1D("electron momentum " + torb, 100, 0., 5.).fill(electron.getMomentum().magnitude());
-
-                    double EoverP = electronEnergy / electronMomentum;
-                    aida.profile1D("EoverP vs p profile " + torb, 50, 1., 4.).fill(electronMomentum, EoverP);
                     Cluster pclus = photon.getClusters().get(0);
-                    double photonEnergy = photon.getEnergy();
-                    int ix = eclus.getCalorimeterHits().get(0).getIdentifierFieldValue("ix");
-                    int iy = eclus.getCalorimeterHits().get(0).getIdentifierFieldValue("iy");
-                    aida.histogram2D("cluster ix vs iy electron", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-                    ix = pclus.getCalorimeterHits().get(0).getIdentifierFieldValue("ix");
-                    iy = pclus.getCalorimeterHits().get(0).getIdentifierFieldValue("iy");
-                    aida.histogram2D("cluster ix vs iy photon", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-                    aida.histogram1D("photon energy", 100, 0., 5.).fill(photon.getEnergy());
+                    // are the clusters in-time?
+                    double t1 = ClusterUtilities.getSeedHitTime(eclus);
+                    double t2 = ClusterUtilities.getSeedHitTime(pclus);
+                    if (abs(t1 - t2) < 2.) {
+                        Hep3Vector pos1 = new BasicHep3Vector(eclus.getPosition());
+                        Hep3Vector pos2 = new BasicHep3Vector(pclus.getPosition());
+                        // opposite hemispheres
+                        if (pos1.x() * pos2.x() < 0. && pos1.y() * pos2.y() < 0.) {
+                            double electronEnergy = electron.getEnergy();
+                            double electronMomentum = electron.getMomentum().magnitude();
+                            boolean electronIsTop = eclus.getPosition()[1] > 0 ? true : false;
+                            String torb = electronIsTop ? "top" : "bottom";
+                            Track t = electron.getTracks().get(0);
+                            aida.histogram1D("electron energy", 100, 0., 5.).fill(electron.getEnergy());
 
-                    double eesum = electron.getEnergy() + photon.getEnergy();
-                    aida.histogram1D("esum " + torb, 100, 2., 5.).fill(eesum);
-                    double pesum = electron.getMomentum().magnitude() + photon.getEnergy();
-                    aida.histogram1D("pesum " + torb, 100, 2., 5.).fill(pesum);
+                            aida.histogram1D("electron energy " + torb, 100, 0., 5.).fill(electron.getEnergy());
+                            aida.histogram1D("electron momentum " + torb, 100, 0., 5.).fill(electron.getMomentum().magnitude());
+
+                            double EoverP = electronEnergy / electronMomentum;
+                            aida.profile1D("EoverP vs p profile " + torb, 50, 1., 4.).fill(electronMomentum, EoverP);
+
+                            double photonEnergy = photon.getEnergy();
+                            int ix = eclus.getCalorimeterHits().get(0).getIdentifierFieldValue("ix");
+                            int iy = eclus.getCalorimeterHits().get(0).getIdentifierFieldValue("iy");
+                            aida.histogram2D("cluster ix vs iy electron", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                            ix = pclus.getCalorimeterHits().get(0).getIdentifierFieldValue("ix");
+                            iy = pclus.getCalorimeterHits().get(0).getIdentifierFieldValue("iy");
+                            aida.histogram2D("cluster ix vs iy photon", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                            aida.histogram1D("photon energy", 100, 0., 5.).fill(photon.getEnergy());
+
+                            double eesum = electron.getEnergy() + photon.getEnergy();
+                            aida.histogram1D("esum " + torb, 100, 2., 5.).fill(eesum);
+                            double pesum = electron.getMomentum().magnitude() + photon.getEnergy();
+                            aida.histogram1D("pesum " + torb, 100, 2., 5.).fill(pesum);
+
+                            // let's see if we can correct a few things
+                            // functions are fit to the profile plots.
+                            // this gives us E/p as a function of the measured p
+                            // multiplying by the measured p brings us to the correct E
+                            double[] parTop = {1.26, -0.15};
+                            double[] parBottom = {1.16, -0.138};
+
+                            double correctedTrackMomentum = 0.;
+                            if (electronIsTop) {
+                                correctedTrackMomentum = (parTop[0] + parTop[1] * electronMomentum) * electronMomentum;
+                            } else {
+                                correctedTrackMomentum = (parBottom[0] + parBottom[1] * electronMomentum) * electronMomentum;
+                            }
+                            // correction for the ECal energy scale 3.74/3.5
+                            double eCorr = 1.07;
+                            aida.histogram1D("electron momentum " + torb + " corrected", 100, 0., 5.).fill(correctedTrackMomentum * eCorr);
+                            aida.histogram1D("pesum " + torb + " corrected", 100, 2., 5.).fill((correctedTrackMomentum + photon.getEnergy()) * eCorr);
+                        }    // end of check on opposite hemispheres
+                    } // end of check on cluster times
                 }
             }
         }
