@@ -104,6 +104,10 @@ public class SkimV02021 extends Driver {
         return trackToData;
     }
 
+    public void setMinNhitsOnTrack(int i)
+    {
+        _minNhitsOnTrack = i;
+    }
     public void setTrackDeltaTimeCut(double d) {
         _trackDeltaTimeCut = d;
     }
