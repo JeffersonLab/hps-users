@@ -30,10 +30,13 @@ public class SkimV02021 extends Driver {
     boolean skipEvent = true;
     String[] vertexCollectionNames = {"UnconstrainedV0Vertices_KF"};//, "UnconstrainedV0Vertices"};
 
-    private double _trackDeltaTimeCut = 20.;
+    private double _deltaTrackTimeCut = 20.;
     private int _minNhitsOnTrack = 11;
     private double _minMomentumCut = 0.5;
     private double _maxMomentumCut = 10.;
+    private boolean _requireClusterMatch = true;
+    private boolean _requireFiducialClusters = true;
+    private double _deltaClusterTimeCut = 2.0;
 
     public void process(EventHeader event) {
         skipEvent = true;
@@ -59,15 +62,64 @@ public class SkimV02021 extends Driver {
                         double posMom = pos.getMomentum().magnitude();
                         double negTrackTime = ((GenericObject) trackToData.from(neg.getTracks().get(0))).getFloatVal(0);
                         double posTrackTime = ((GenericObject) trackToData.from(pos.getTracks().get(0))).getFloatVal(0);
-                        double deltaTime = negTrackTime - posTrackTime;
+                        double deltaTrackTime = negTrackTime - posTrackTime;
 
-                        if (negNhits >= _minNhitsOnTrack && posNhits >= _minNhitsOnTrack && abs(deltaTime) < _trackDeltaTimeCut) {
+                        boolean posTrackIsTop = ((GenericObject) trackToData.from(pos.getTracks().get(0))).getIntVal(0) == 0;
+                        boolean negTrackIsTop = ((GenericObject) trackToData.from(neg.getTracks().get(0))).getIntVal(0) == 0;
+                        String posTorB = posTrackIsTop ? " top " : " bottom ";
+                        String negTorB = posTrackIsTop ? " top " : " bottom ";
+
+                        if (negNhits >= _minNhitsOnTrack && posNhits >= _minNhitsOnTrack && abs(deltaTrackTime) < _deltaTrackTimeCut) {
                             if (negMom >= _minMomentumCut && negMom <= _maxMomentumCut) {
                                 if (posMom >= _minMomentumCut && posMom <= _maxMomentumCut) {
-                                    aida.histogram1D("delta track time", 100, -20., 20.).fill(deltaTime);
+                                    aida.histogram1D("delta track time", 100, -20., 20.).fill(deltaTrackTime);
                                     aida.histogram1D("negative momentum", 100, 0., 6.0).fill(negMom);
                                     aida.histogram1D("positive momentum", 100, 0., 6.0).fill(posMom);
+
+                                    aida.histogram1D("negative momentum" + negTorB, 100, 0., 6.0).fill(negMom);
+                                    aida.histogram1D("positive momentum" + posTorB, 100, 0., 6.0).fill(posMom);
+                                    aida.histogram1D("negative nHits" + negTorB, 20, -0.5, 19.5).fill(negNhits);
+                                    aida.histogram1D("positive nHits" + posTorB, 20, -0.5, 19.5).fill(posNhits);
+
                                     skipEvent = false;
+                                    if (_requireClusterMatch) {
+                                        skipEvent = true;
+                                        // let's also require both to have clusters
+                                        if (!neg.getClusters().isEmpty() && !pos.getClusters().isEmpty()) {
+                                            Cluster negClus = neg.getClusters().get(0);
+                                            Cluster posClus = pos.getClusters().get(0);
+                                            // in time
+                                            double negTime = ClusterUtilities.getSeedHitTime(negClus);
+                                            double posTime = ClusterUtilities.getSeedHitTime(posClus);
+                                            double deltaClusterTime = negTime - posTime;
+                                            aida.histogram1D("delta cluster time", 100, -20., 20.).fill(deltaClusterTime);
+                                            if (abs(deltaClusterTime) < _deltaClusterTimeCut) {
+                                                skipEvent = false;
+                                                // fiducial
+                                                boolean negIsFiducial = TriggerModule.inFiducialRegion(negClus);
+                                                boolean posIsFiducial = TriggerModule.inFiducialRegion(posClus);
+                                                if (_requireFiducialClusters) {
+                                                    if (!negIsFiducial) {
+                                                        skipEvent = true;
+                                                    }
+                                                    if (!posIsFiducial) {
+                                                        skipEvent = true;
+                                                    }
+                                                    if (negIsFiducial && posIsFiducial) {
+                                                        aida.histogram1D("delta track time two fiducial clusters", 100, -20., 20.).fill(deltaTrackTime);
+                                                        aida.histogram1D("negative momentum two fiducial clusters", 100, 0., 6.0).fill(negMom);
+                                                        aida.histogram1D("positive momentum two fiducial clusters", 100, 0., 6.0).fill(posMom);
+                                                        aida.histogram1D("delta cluster time two fiducial clusters", 100, -20., 20.).fill(deltaClusterTime);
+
+                                                        aida.histogram1D("negative momentum" + negTorB + " two fiducial clusters", 100, 0., 6.0).fill(negMom);
+                                                        aida.histogram1D("positive momentum" + posTorB + " two fiducial clusters", 100, 0., 6.0).fill(posMom);
+                                                        aida.histogram1D("negative nHits" + negTorB + " two fiducial clusters", 20, -0.5, 19.5).fill(negNhits);
+                                                        aida.histogram1D("positive nHits" + posTorB + " two fiducial clusters", 20, -0.5, 19.5).fill(posNhits);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         } // end of check on number of track hits, delta time and momentum
@@ -104,12 +156,12 @@ public class SkimV02021 extends Driver {
         return trackToData;
     }
 
-    public void setMinNhitsOnTrack(int i)
-    {
+    public void setMinNhitsOnTrack(int i) {
         _minNhitsOnTrack = i;
     }
-    public void setTrackDeltaTimeCut(double d) {
-        _trackDeltaTimeCut = d;
+
+    public void setDeltaTrackTimeCut(double d) {
+        _deltaTrackTimeCut = d;
     }
 
     public void setMinMomentumCut(double d) {
@@ -120,4 +172,15 @@ public class SkimV02021 extends Driver {
         _maxMomentumCut = d;
     }
 
+    public void setRequireClusterMatch(boolean b) {
+        _requireClusterMatch = b;
+    }
+
+    public void setRequireFiducialClusters(boolean b) {
+        _requireFiducialClusters = b;
+    }
+
+    public void setDeltaClusterTimeCut(double d) {
+        _deltaClusterTimeCut = d;
+    }
 }

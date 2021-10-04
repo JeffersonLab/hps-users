@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <lcsim xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
        xs:noNamespaceSchemaLocation="http://www.lcsim.org/schemas/lcsim/1.0/lcsim.xsd">
+    <!--    <inputFiles>
+              <fileList>${inputFileList}</fileList>
+            </inputFiles>
+    -->
     <control>
         <printDriverStatistics>true</printDriverStatistics>
         <printDriversDetailed>true</printDriversDetailed>
@@ -21,9 +25,12 @@
         <driver name="StripEvent" 
                 type="org.hps.users.ngraf.skim.SkimV02021">
             <minNhitsOnTrack>12</minNhitsOnTrack>
-            <trackDeltaTimeCut>20.</trackDeltaTimeCut>
+            <deltaTrackTimeCut>20.</deltaTrackTimeCut>
             <minMomentumCut>0.5</minMomentumCut>
             <maxMomentumCut>7.0</maxMomentumCut>
+            <requireClusterMatch>false</requireClusterMatch>
+            <requireFiducialClusters>false</requireFiducialClusters>
+            <deltaClusterTimeCut>2.0</deltaClusterTimeCut>
         </driver>
         <!-- Driver to write output slcio file -->
         <driver name="Writer"
