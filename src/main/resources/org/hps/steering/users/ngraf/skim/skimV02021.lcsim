@@ -31,6 +31,7 @@
             <requireClusterMatch>false</requireClusterMatch>
             <requireFiducialClusters>false</requireFiducialClusters>
             <deltaClusterTimeCut>2.0</deltaClusterTimeCut>
+            <maxNumberOfVertices>4.</maxNumberOfVertices>
         </driver>
         <!-- Driver to write output slcio file -->
         <driver name="Writer"

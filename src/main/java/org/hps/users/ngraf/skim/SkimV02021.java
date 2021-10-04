@@ -29,7 +29,7 @@ public class SkimV02021 extends Driver {
     private int _numberOfEventsProcessed = 0;
     boolean skipEvent = true;
     String[] vertexCollectionNames = {"UnconstrainedV0Vertices_KF"};//, "UnconstrainedV0Vertices"};
-
+    private double _maxNumberOfVertices = 1;
     private double _deltaTrackTimeCut = 20.;
     private int _minNhitsOnTrack = 11;
     private double _minMomentumCut = 0.5;
@@ -47,7 +47,7 @@ public class SkimV02021 extends Driver {
             if (event.hasCollection(Vertex.class, vertexCollectionName)) {
                 List<Vertex> vertices = event.get(Vertex.class, vertexCollectionName);
                 aida.histogram1D("number of vertices in event", 10, -0.5, 9.5).fill(vertices.size());
-                if (vertices.size() > 0) {
+                if (vertices.size() > 0 && vertices.size() <= _maxNumberOfVertices) {
                     RelationalTable trackToData = getKFTrackDataRelations(event);
                     for (Vertex v : vertices) {
                         ReconstructedParticle v0 = v.getAssociatedParticle();
@@ -182,5 +182,9 @@ public class SkimV02021 extends Driver {
 
     public void setDeltaClusterTimeCut(double d) {
         _deltaClusterTimeCut = d;
+    }
+
+    public void setMaxNumberOfVertices(int i) {
+        _maxNumberOfVertices = i;
     }
 }
