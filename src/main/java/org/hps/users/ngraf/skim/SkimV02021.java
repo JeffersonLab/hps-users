@@ -64,10 +64,10 @@ public class SkimV02021 extends Driver {
                         double posTrackTime = ((GenericObject) trackToData.from(pos.getTracks().get(0))).getFloatVal(0);
                         double deltaTrackTime = negTrackTime - posTrackTime;
 
-                        boolean posTrackIsTop = ((GenericObject) trackToData.from(pos.getTracks().get(0))).getIntVal(0) == 0;
-                        boolean negTrackIsTop = ((GenericObject) trackToData.from(neg.getTracks().get(0))).getIntVal(0) == 0;
+                        boolean posTrackIsTop = pos.getMomentum().y() > 0.;
+                        boolean negTrackIsTop = neg.getMomentum().y() > 0.;
                         String posTorB = posTrackIsTop ? " top " : " bottom ";
-                        String negTorB = posTrackIsTop ? " top " : " bottom ";
+                        String negTorB = negTrackIsTop ? " top " : " bottom ";
 
                         if (negNhits >= _minNhitsOnTrack && posNhits >= _minNhitsOnTrack && abs(deltaTrackTime) < _deltaTrackTimeCut) {
                             if (negMom >= _minMomentumCut && negMom <= _maxMomentumCut) {
