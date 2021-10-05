@@ -43,9 +43,9 @@ public class SimpleMollerAnalysis2021 extends Driver {
     @Override
     protected void process(EventHeader event) {
         List<Vertex> vertices = event.get(Vertex.class, "UnconstrainedMollerVertices_KF");
+        aida.histogram1D("Number of Moller vertices", 10, -0.5, 9.5).fill(vertices.size());
         if (!vertices.isEmpty()) {
             RelationalTable trackToData = getKFTrackDataRelations(event);
-            aida.histogram1D("Number of Moller vertices", 10, -0.5, 9.5).fill(vertices.size());
             for (Vertex v : vertices) {
                 ReconstructedParticle rp = v.getAssociatedParticle();
                 double invMass = rp.getMass();
@@ -66,6 +66,10 @@ public class SimpleMollerAnalysis2021 extends Driver {
                 aida.histogram1D("track1 nHits", 20, -0.5, 19.5).fill(track1_nHits);
                 aida.histogram1D("track2 nHits", 20, -0.5, 19.5).fill(track2_nHits);
                 aida.histogram1D("psum", 100, 0., 7.).fill(psum);
+                aida.histogram1D("p1", 100, 0., 7.).fill(p1);
+                aida.histogram1D("p2", 100, 0., 7.).fill(p2);
+                aida.histogram2D("p1 vs p2", 100, 0., 7., 100, 0., 7.).fill(p1, p2);
+                aida.histogram1D("p2", 100, 0., 7.).fill(p2);
                 aida.histogram1D("invariant mass", 100, 0., 0.2).fill(invMass);
                 aida.histogram2D("psum vs invariant mass", 100, 0., 7., 100, 0., 0.2).fill(psum, invMass);
                 // add some selection cuts
@@ -77,6 +81,9 @@ public class SimpleMollerAnalysis2021 extends Driver {
                     aida.histogram1D("track1 nHits", 20, -0.5, 19.5).fill(track1_nHits);
                     aida.histogram1D("track2 nHits", 20, -0.5, 19.5).fill(track2_nHits);
                     aida.histogram1D("psum", 100, 0., 7.).fill(psum);
+                    aida.histogram1D("p1", 100, 0., 7.).fill(p1);
+                    aida.histogram1D("p2", 100, 0., 7.).fill(p2);
+                    aida.histogram2D("p1 vs p2", 100, 0., 7., 100, 0., 7.).fill(p1, p2);
                     aida.histogram1D("invariant mass", 100, 0., 0.2).fill(invMass);
                     aida.histogram2D("psum vs invariant mass", 100, 0., 7., 100, 0., 0.2).fill(psum, invMass);
                     reAnalyzeMoller(v);
@@ -157,8 +164,8 @@ public class SimpleMollerAnalysis2021 extends Driver {
         // let's look at top/bottom
         double psum = p1corrmom.magnitude() + p2corrmomrot.magnitude();
         aida.histogram1D("psum corrected", 100, 0., 7.).fill(psum);
+        aida.histogram1D("psum corrected fine", 100, 2.5, 6.0).fill(psum);
         aida.histogram2D("psum corrected vs invariant mass corrected ", 100, 0., 7., 100, 0., 0.2).fill(psum, invMasscorrected);
-                    
 
 //        if (clus.getPosition()[1] > 0.) {
 //            aida.histogram1D("matched track momentum top", 50, 1., 3.).fill(p);
