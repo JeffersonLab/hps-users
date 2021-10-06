@@ -36,6 +36,8 @@ public class SimpleMollerAnalysis2021 extends Driver {
     private double _deltaTrackTimeCut = 10;
     private int _minNhitsOnTrack = 11;
 
+    private double _pCorrectionBottom = 1.761/2.09;// 3.80 / 5.15; // derived by comparing FEE peak in p1 and p2
+
     protected void detectorChanged(Detector detector) {
         _beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
     }
@@ -69,7 +71,10 @@ public class SimpleMollerAnalysis2021 extends Driver {
                 aida.histogram1D("p1", 100, 0., 7.).fill(p1);
                 aida.histogram1D("p2", 100, 0., 7.).fill(p2);
                 aida.histogram2D("p1 vs p2", 100, 0., 7., 100, 0., 7.).fill(p1, p2);
-                aida.histogram1D("p2", 100, 0., 7.).fill(p2);
+                double p2corr = p2 * _pCorrectionBottom;
+                aida.histogram1D("p2corr", 100, 0., 7.).fill(p2corr);
+                aida.histogram2D("p1 vs p2corr", 100, 0., 7., 100, 0., 7.).fill(p1, p2corr);
+                aida.histogram1D("p1 + p2corr", 100, 0., 7.).fill(p1 + p2corr);
                 aida.histogram1D("invariant mass", 100, 0., 0.2).fill(invMass);
                 aida.histogram2D("psum vs invariant mass", 100, 0., 7., 100, 0., 0.2).fill(psum, invMass);
                 // add some selection cuts
@@ -84,8 +89,12 @@ public class SimpleMollerAnalysis2021 extends Driver {
                     aida.histogram1D("p1", 100, 0., 7.).fill(p1);
                     aida.histogram1D("p2", 100, 0., 7.).fill(p2);
                     aida.histogram2D("p1 vs p2", 100, 0., 7., 100, 0., 7.).fill(p1, p2);
+                    aida.histogram1D("p2corr", 100, 0., 7.).fill(p2corr);
+                    aida.histogram2D("p1 vs p2corr", 100, 0., 7., 100, 0., 7.).fill(p1, p2corr);
+                    aida.histogram1D("p1 + p2corr", 100, 0., 7.).fill(p1 + p2corr);
                     aida.histogram1D("invariant mass", 100, 0., 0.2).fill(invMass);
                     aida.histogram2D("psum vs invariant mass", 100, 0., 7., 100, 0., 0.2).fill(psum, invMass);
+                    aida.histogram2D("p1 + p2corr vs invariant mass", 100, 0., 7., 100, 0., 0.2).fill(p1 + p2corr, invMass);
                     reAnalyzeMoller(v);
                     aida.tree().cd("..");
                 }
@@ -134,6 +143,7 @@ public class SimpleMollerAnalysis2021 extends Driver {
 //        double invMass2 = invMass(p1, p2);
 //        aida.histogram1D("vertex invariant mass e+e- recalculated", 100, 0., 0.2).fill(invMass2);
 
+        // simple correction scales bottom momentum by 1.761/2.09
         double[] p1corr = correctMomentum(p1);
         double[] p2corr = correctMomentum(p2);
         double invMasscorrected = invMass(p1corr, p2corr);
@@ -144,8 +154,14 @@ public class SimpleMollerAnalysis2021 extends Driver {
         aida.histogram1D("vtx pz corrected", 100, 0., 5.).fill(p1corr[2] + p2corr[2]);
 
         //
+        Hep3Vector p1mom = new BasicHep3Vector(p1);
+        Hep3Vector p2mom = new BasicHep3Vector(p2);
+        
         Hep3Vector p1corrmom = new BasicHep3Vector(p1corr);
         Hep3Vector p2corrmom = new BasicHep3Vector(p2corr);
+        
+        aida.histogram2D("p1 vs p1corr", 100, 1., 3., 100, 1., 3.).fill(p1mom.magnitude(), p1corrmom.magnitude());
+        aida.histogram2D("p2 vs p2corr", 100, 1., 3., 100, 1., 3.).fill(p2mom.magnitude(), p2corrmom.magnitude());
         Hep3Vector p1corrmomrot = VecOp.mult(_beamAxisRotation, p1corrmom);
         Hep3Vector p2corrmomrot = VecOp.mult(_beamAxisRotation, p2corrmom);
         double theta1 = Math.acos(p1corrmomrot.z() / p1corrmomrot.magnitude());
