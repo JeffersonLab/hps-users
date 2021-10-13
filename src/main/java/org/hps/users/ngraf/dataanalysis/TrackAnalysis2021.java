@@ -27,6 +27,7 @@ import org.lcsim.util.aida.AIDA;
 public class TrackAnalysis2021 extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
+    static public double ENERGY_EHPAIR = 3.62E-9;
 
     public void process(EventHeader event) {
         if (event.hasCollection(ReconstructedParticle.class, "FinalStateParticles_KF")) {
@@ -68,22 +69,25 @@ public class TrackAnalysis2021 extends Driver {
                                     int layer = sensor.getLayerNumber();
                                     String sensorType = layer < 3 ? "thin" : "thick";
                                     int clusSize = hit.getRawHits().size();
-                                    double dEdx = 1000000 * hit.getdEdx();
+//                                    double dEdx = 1000000 * hit.getdEdx();
+                                    double cluAmp = hit.getdEdx()/ENERGY_EHPAIR;
+                                    short[] adcVals = ((RawTrackerHit) hit.getRawHits().get(0)).getADCValues();
                                     double time = hit.getTime();
-                                    aida.histogram1D("hit dEdx " + sensorType, 100, 0., 20.).fill(dEdx);
+//                                    aida.histogram1D("hit dEdx " + sensorType, 100, 0., 20.).fill(dEdx);
+                                    aida.histogram1D("hit corrected cluster amplitude " + sensorType, 100, 0., 3000.).fill(cluAmp);
                                     aida.histogram1D("hit time " + sensorType, 100, -20., 20.).fill(time);
 //                                    aida.histogram1D("hit cluster size " + sensorName, 10, 0.5, 10.5).fill(clusSize);
                                     if (type.equals(" electron") && !sensorName.contains("slot")) {
-                                        aida.histogram1D(sensorName + " hit dEdx", 100, 0., 20.).fill(dEdx);
+                                        aida.histogram1D(sensorName + " hit corrected cluster amplitude", 100, 0., 3000.).fill(cluAmp);
                                         if (clusSize < 3) {
-                                            aida.histogram1D(sensorName + " hit dEdx " + clusSize + " strip cluster", 100, 0., 20.).fill(dEdx);
+                                            aida.histogram1D(sensorName + " hit corrected cluster amplitude " + clusSize + " strip cluster", 100, 0., 3000.).fill(cluAmp);
                                         }
                                         aida.histogram1D(sensorName + " cluster size", 10, -0.5, 9.5).fill(clusSize);
                                     }
                                     if (type.equals(" positron") && !sensorName.contains("hole")) {
-                                        aida.histogram1D(sensorName + " hit dEdx", 100, 0., 20.).fill(dEdx);
+                                        aida.histogram1D(sensorName + " hit corrected cluster amplitude", 100, 0., 3000.).fill(cluAmp);
                                         if (clusSize < 3) {
-                                            aida.histogram1D(sensorName + " hit dEdx " + clusSize + " strip cluster", 100, 0., 20.).fill(dEdx);
+                                            aida.histogram1D(sensorName + " hit corrected cluster amplitude " + clusSize + " strip cluster", 100, 0., 3000.).fill(cluAmp);
                                         }
                                         aida.histogram1D(sensorName + " cluster size", 10, -0.5, 9.5).fill(clusSize);
                                     }
@@ -92,15 +96,17 @@ public class TrackAnalysis2021 extends Driver {
                                         List<RawTrackerHit> clusterRawHits = hit.getRawHits();
                                         int channel = clusterRawHits.get(0).getIdentifierFieldValue("strip");
                                         aida.histogram1D(sensor.getName() + " channel", 640, 0, 640.).fill(channel);
-                                        //let's start with the split-strip sensors...
-                                        if (sensorName.contains("L1") || sensorName.contains("L2")) {
-                                            if (channel < 20 || channel > 490) {
-                                                aida.tree().mkdirs(sensor.getName());
-                                                aida.tree().cd(sensor.getName());
-                                                aida.histogram1D(sensorName + " hit dEdx channel "+channel, 100, 0., 20.).fill(dEdx);
-                                                aida.tree().cd("..");
-                                            }
-                                        }
+                                        aida.histogram2D(sensor.getName() + " cluster amplitude vs channel", 640, 0, 640., 100, 0., 3000.).fill(channel, cluAmp);
+                                        
+//                                        //let's start with the split-strip sensors...
+//                                        if (sensorName.contains("L1") || sensorName.contains("L2")) {
+//                                            if (channel < 20 || channel > 490) {
+//                                                aida.tree().mkdirs(sensor.getName());
+//                                                aida.tree().cd(sensor.getName());
+//                                                aida.histogram1D(sensorName + " hit dEdx channel "+channel, 100, 0., 20.).fill(dEdx);
+//                                                aida.tree().cd("..");
+//                                            }
+//                                        }
                                     }
 //                                    aida.histogram1D(sensorName + " hit time", 100, -20., 20.).fill(time);
 //                                    aida.histogram1D(sensorName + " hit cluster size", 10, -0.5, 9.5).fill(clusSize);
