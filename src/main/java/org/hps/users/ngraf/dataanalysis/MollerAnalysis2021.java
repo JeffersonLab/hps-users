@@ -40,6 +40,8 @@ public class MollerAnalysis2021 extends Driver {
     private int _numberOfEventsProcessed = 0;
     boolean _skipEvent = true;
 
+    final double pScale = 1.761 / 2.09;
+
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
     }
@@ -149,7 +151,14 @@ public class MollerAnalysis2021 extends Driver {
                     // let's look for the other electron
                     for (ReconstructedParticle rp2 : electrons) {
                         double psum = electron1.getMomentum().magnitude() + rp2.getMomentum().magnitude();
+                        double psumCorr = 0.;
+                        if (isTop) {
+                            psumCorr = electron1.getMomentum().magnitude() + rp2.getMomentum().magnitude() * pScale;
+                        } else {
+                            psumCorr = electron1.getMomentum().magnitude() * pScale + rp2.getMomentum().magnitude();
+                        }
                         aida.histogram1D("psum", 100, 0., 7.).fill(psum);
+                        aida.histogram1D("psumCorr", 100, 0., 7.).fill(psumCorr);
                         Track track2 = rp2.getTracks().get(0);
                         double track2_time = ((GenericObject) trackToData.from(track2)).getFloatVal(0);
                         double track2_momentum = rp2.getMomentum().magnitude();
@@ -164,6 +173,7 @@ public class MollerAnalysis2021 extends Driver {
                         // cut on sumPY and track delta time...
                         if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < 0.04 && abs(track1_time - track2_time) < 4.0) {
                             aida.histogram1D("psum final", 100, 0., 7.).fill(psum);
+                            aida.histogram1D("psumCorr final", 100, 0., 7.).fill(psumCorr);
                             aida.histogram1D("track delta time final", 50, -10., 10.).fill(track1_time - track2_time);
                             aida.histogram1D("track sum pY final", 50, -0.1, 0.1).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
                             _skipEvent = false;
