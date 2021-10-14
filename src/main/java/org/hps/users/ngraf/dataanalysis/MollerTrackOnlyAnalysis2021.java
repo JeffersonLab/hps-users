@@ -26,7 +26,8 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
     private int _numberOfEventsSelected;
     private int _numberOfEventsProcessed = 0;
-    boolean _skipEvent = true;
+    private boolean _skipEvent = true;
+    private boolean _skimEvents = false;
     final double pScale = 1.761 / 2.09;
 
     protected void detectorChanged(Detector detector) {
@@ -117,7 +118,7 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
         }
         aida.tree().cd("..");
         if (_skipEvent) {
-            throw new Driver.NextEventException();
+            if(_skimEvents) throw new Driver.NextEventException();
         } else {
             _numberOfEventsSelected++;
         }
@@ -142,5 +143,9 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
             }
         }
         return trackToData;
+    }
+
+    public void setSkimEvents(boolean b) {
+        _skimEvents = b;
     }
 }
