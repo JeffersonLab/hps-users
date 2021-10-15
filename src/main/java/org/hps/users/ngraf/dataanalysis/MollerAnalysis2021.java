@@ -2,8 +2,10 @@ package org.hps.users.ngraf.dataanalysis;
 
 import hep.physics.vec.BasicHep3Matrix;
 import hep.physics.vec.Hep3Vector;
+import hep.physics.vec.HepLorentzVector;
 import hep.physics.vec.VecOp;
 import static java.lang.Math.abs;
+import static java.lang.Math.sqrt;
 import java.util.ArrayList;
 import java.util.List;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
@@ -21,6 +23,8 @@ import org.lcsim.event.base.BaseRelationalTable;
 import org.lcsim.geometry.Detector;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
+import org.lcsim.util.fourvec.Lorentz4Vector;
+import org.lcsim.util.fourvec.Momentum4Vector;
 
 /**
  *
@@ -149,36 +153,50 @@ public class MollerAnalysis2021 extends Driver {
                     }
 
                     // let's look for the other electron
-                    for (ReconstructedParticle rp2 : electrons) {
-                        double psum = electron1.getMomentum().magnitude() + rp2.getMomentum().magnitude();
-                        double psumCorr = 0.;
-                        if (isTop) {
-                            psumCorr = electron1.getMomentum().magnitude() + rp2.getMomentum().magnitude() * pScale;
-                        } else {
-                            psumCorr = electron1.getMomentum().magnitude() * pScale + rp2.getMomentum().magnitude();
-                        }
-                        aida.histogram1D("psum", 100, 0., 7.).fill(psum);
-                        aida.histogram1D("psumCorr", 100, 0., 7.).fill(psumCorr);
-                        Track track2 = rp2.getTracks().get(0);
-                        double track2_time = ((GenericObject) trackToData.from(track2)).getFloatVal(0);
-                        double track2_momentum = rp2.getMomentum().magnitude();
-                        aida.histogram1D("track2 time", 100, -40., 40.).fill(track2_time);
-                        aida.histogram2D("track1 time vs track2 time", 50, -40., 40., 50, -40., 40.).fill(track1_time, track2_time);
-                        aida.histogram1D("track delta time", 100, -100., 100.).fill(track1_time - track2_time);
-                        aida.histogram1D("track sum pY", 100, -1., 1.).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
-                        aida.histogram1D("electron2 number of hits on track", 20, -0.5, 19.5).fill(track2.getTrackerHits().size());
-                        aida.histogram1D("electron1 track time - cluster time after match", 100, -100., 0.).fill(track1_time - clusterTime);
-                        aida.histogram2D("track delta time vs track1-cluster delta time", 100, -100., 0., 100, -100., 100.).fill(track1_time - clusterTime, track1_time - track2_time);
-                        aida.histogram2D("track delta time vs track sum pY", 50, -10., 10, 50, -0.1, 0.1).fill(track1_time - track2_time, electron1.getMomentum().y() + rp2.getMomentum().y());
-                        // cut on sumPY and track delta time...
-                        if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < 0.04 && abs(track1_time - track2_time) < 4.0) {
-                            aida.histogram1D("psum final", 100, 0., 7.).fill(psum);
-                            aida.histogram1D("psumCorr final", 100, 0., 7.).fill(psumCorr);
-                            aida.histogram1D("track delta time final", 50, -10., 10.).fill(track1_time - track2_time);
-                            aida.histogram1D("track sum pY final", 50, -0.1, 0.1).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
-                            _skipEvent = false;
-                        }
-                    }
+                    if (electrons.size() == 1) {
+                        for (ReconstructedParticle rp2 : electrons) {
+                            double psum = electron1.getMomentum().magnitude() + rp2.getMomentum().magnitude();
+                            double psumCorr = 0.;
+                            if (isTop) {
+                                psumCorr = electron1.getMomentum().magnitude() + rp2.getMomentum().magnitude() * pScale;
+                            } else {
+                                psumCorr = electron1.getMomentum().magnitude() * pScale + rp2.getMomentum().magnitude();
+                            }
+                            aida.histogram1D("psum", 100, 0., 7.).fill(psum);
+                            aida.histogram1D("psumCorr", 100, 0., 7.).fill(psumCorr);
+                            Track track2 = rp2.getTracks().get(0);
+                            double track2_time = ((GenericObject) trackToData.from(track2)).getFloatVal(0);
+                            double track2_momentum = rp2.getMomentum().magnitude();
+                            aida.histogram1D("electron2 track momentum", 100, 0., 5.0).fill(track2_momentum);
+                            aida.histogram1D("track2 time", 100, -40., 40.).fill(track2_time);
+                            aida.histogram2D("track1 time vs track2 time", 50, -40., 40., 50, -40., 40.).fill(track1_time, track2_time);
+                            aida.histogram1D("track delta time", 100, -100., 100.).fill(track1_time - track2_time);
+                            aida.histogram1D("track sum pY", 100, -1., 1.).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
+                            aida.histogram1D("electron2 number of hits on track", 20, -0.5, 19.5).fill(track2.getTrackerHits().size());
+                            aida.histogram1D("electron1 track time - cluster time after match", 100, -100., 0.).fill(track1_time - clusterTime);
+                            aida.histogram2D("track delta time vs track1-cluster delta time", 100, -100., 0., 100, -100., 100.).fill(track1_time - clusterTime, track1_time - track2_time);
+                            aida.histogram2D("track delta time vs track sum pY", 50, -10., 10, 50, -0.1, 0.1).fill(track1_time - track2_time, electron1.getMomentum().y() + rp2.getMomentum().y());
+                            // cut on sumPY and track delta time...
+                            if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < 0.04 && abs(track1_time - track2_time) < 4.0) {
+                                if (track2_momentum > 1.6 && track2_momentum < 3.2) {
+                                    aida.histogram1D("electron1 track momentum final", 100, 0., 5.0).fill(track1_momentum);
+                                    aida.histogram1D("electron2 track momentum final", 100, 0., 5.0).fill(track2_momentum);
+                                    aida.histogram2D("electron1 track momentum vs electron2 track momentum final", 100, 0., 5.0, 100, 0., 5.0).fill(track1_momentum, track2_momentum);
+                                    aida.histogram1D("psum final", 100, 0., 7.).fill(psum);
+                                    aida.histogram1D("psumCorr final", 100, 0., 7.).fill(psumCorr);
+                                    aida.histogram1D("track delta time final", 50, -10., 10.).fill(track1_time - track2_time);
+                                    aida.histogram1D("track sum pY final", 50, -0.1, 0.1).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
+                                    aida.histogram1D("track sum pX final", 50, -0.3, 0.3).fill(electron1.getMomentum().x() + rp2.getMomentum().x());
+                                    if (isTop) {
+                                        analyzeTwoElectrons(electron1, rp2);
+                                    } else {
+                                        analyzeTwoElectrons(rp2, electron1);
+                                    }
+                                    _skipEvent = false;
+                                }
+                            }
+                        }//loop over other electrons
+                    }//end of check on one and only one other electron
                 }
 //                }
                 aida.tree().cd("..");
@@ -257,6 +275,31 @@ public class MollerAnalysis2021 extends Driver {
     @Override
     protected void endOfData() {
         System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
+    }
+
+    private void analyzeTwoElectrons(ReconstructedParticle ele1, ReconstructedParticle ele2) {
+        // note that e1 is the top electron
+        double emass = 0.000511;
+        double emass2 = emass * emass;
+        double[] p1 = ele1.getMomentum().v();
+        double[] p2 = ele2.getMomentum().v();
+        // apply ad hoc correction to bottom momentum
+        for (int i = 0; i < 2; ++i) {
+            p2[i] *= p2[i] * pScale;
+        }
+        double e1 = 0;
+        double e2 = 0.;
+        for (int i = 0; i < 3; ++i) {
+            e1 += p1[i] * p1[i];
+            e2 += p2[i] * p2[i];
+        }
+        e1 = sqrt(e1 + emass2);
+        e2 = sqrt(e2 + emass2);
+        Momentum4Vector evec1 = new Momentum4Vector(p1[0], p1[1], p1[2], e1);
+        Momentum4Vector evec2 = new Momentum4Vector(p2[0], p2[1], p2[2], e2);
+        Lorentz4Vector eesum = evec1.plus(evec2);
+        double eemass = eesum.mass();
+        aida.histogram1D("invariant mass", 50, 0.0, 0.15).fill(eemass);
     }
 
     public RelationalTable getKFTrackDataRelations(EventHeader event) {
