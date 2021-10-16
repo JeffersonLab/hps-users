@@ -48,8 +48,8 @@ public class TrackAnalysis2021 extends Driver {
                         Track t = rp.getTracks().get(0);
                         double p = rp.getMomentum().magnitude();
                         String topOrBottom = rp.getMomentum().y() > 0 ? " top " : " bottom ";
-                        double e = rp.getEnergy();
-                        if (e > 0.5) {
+//                        double e = rp.getEnergy();
+                        if (p > 0.5) {
                             aida.tree().mkdirs(type + " Analysis");
                             aida.tree().cd(type + " Analysis");
 //                                CalorimeterHit seed = c.getCalorimeterHits().get(0);
@@ -117,7 +117,7 @@ public class TrackAnalysis2021 extends Driver {
                             }
                             aida.tree().cd("..");
 //                            }
-                        }
+                        } 
 //                    }
                     }
                 }
