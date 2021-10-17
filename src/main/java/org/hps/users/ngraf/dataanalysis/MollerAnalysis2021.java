@@ -177,24 +177,50 @@ public class MollerAnalysis2021 extends Driver {
                             aida.histogram2D("track delta time vs track1-cluster delta time", 100, -100., 0., 100, -100., 100.).fill(track1_time - clusterTime, track1_time - track2_time);
                             aida.histogram2D("track delta time vs track sum pY", 50, -10., 10, 50, -0.1, 0.1).fill(track1_time - track2_time, electron1.getMomentum().y() + rp2.getMomentum().y());
                             // cut on sumPY and track delta time...
-                            if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < 0.04 && abs(track1_time - track2_time) < 4.0) {
+                            if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < 0.04) {
                                 if (track2_momentum > 1.6 && track2_momentum < 3.2) {
+                                    aida.histogram1D("track delta time after sumPy and track2 momentum cuts", 100, -100., 100.).fill(track1_time - track2_time);
+                                    // signal should be in-time
+                                    if (abs(track1_time - track2_time) < 4.0) {
+                                        aida.histogram1D("electron1 track momentum final", 100, 0., 5.0).fill(track1_momentum);
+                                        aida.histogram1D("electron2 track momentum final", 100, 0., 5.0).fill(track2_momentum);
+                                        aida.histogram2D("electron1 track momentum vs electron2 track momentum final", 100, 0., 5.0, 100, 0., 5.0).fill(track1_momentum, track2_momentum);
+                                        aida.histogram1D("psum final", 100, 0., 7.).fill(psum);
+                                        aida.histogram1D("psumCorr final", 100, 0., 7.).fill(psumCorr);
+                                        aida.histogram1D("track delta time final", 100, -100., 100.).fill(track1_time - track2_time);
+                                        aida.histogram1D("track delta time final finescale", 50, -10., 10.).fill(track1_time - track2_time);
+                                        aida.histogram1D("track sum pY final", 50, -0.1, 0.1).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
+                                        aida.histogram1D("track sum pX final", 50, 0.0, 0.2).fill(electron1.getMomentum().x() + rp2.getMomentum().x());
+                                        if (isTop) {
+                                            analyzeTwoElectrons(electron1, rp2);
+                                        } else {
+                                            analyzeTwoElectrons(rp2, electron1);
+                                        }
+                                        _skipEvent = false;
+                                    }
+                                }
+                            }
+                            //let's now look at out-of-time tracks keeping all the other cuts the same
+                            if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < 0.04 && (track1_time - track2_time) < -10.0) {
+                                if (track2_momentum > 1.6 && track2_momentum < 3.2) {
+                                    aida.tree().mkdirs("out of time track2");
+                                    aida.tree().cd("out of time track2");
                                     aida.histogram1D("electron1 track momentum final", 100, 0., 5.0).fill(track1_momentum);
                                     aida.histogram1D("electron2 track momentum final", 100, 0., 5.0).fill(track2_momentum);
                                     aida.histogram2D("electron1 track momentum vs electron2 track momentum final", 100, 0., 5.0, 100, 0., 5.0).fill(track1_momentum, track2_momentum);
                                     aida.histogram1D("psum final", 100, 0., 7.).fill(psum);
                                     aida.histogram1D("psumCorr final", 100, 0., 7.).fill(psumCorr);
-                                    aida.histogram1D("track delta time final", 50, -10., 10.).fill(track1_time - track2_time);
+                                    aida.histogram1D("track delta time final", 100, -100., 100.).fill(track1_time - track2_time);
                                     aida.histogram1D("track sum pY final", 50, -0.1, 0.1).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
-                                    aida.histogram1D("track sum pX final", 50, -0.3, 0.3).fill(electron1.getMomentum().x() + rp2.getMomentum().x());
+                                    aida.histogram1D("track sum pX final", 50, 0.0, 0.2).fill(electron1.getMomentum().x() + rp2.getMomentum().x());
                                     if (isTop) {
                                         analyzeTwoElectrons(electron1, rp2);
                                     } else {
                                         analyzeTwoElectrons(rp2, electron1);
                                     }
-                                    _skipEvent = false;
-                                }
-                            }
+                                    aida.tree().cd("..");
+                                }// end of cut on track2 momentum
+                            }// end of out-of-time analysis
                         }//loop over other electrons
                     }//end of check on one and only one other electron
                 }
