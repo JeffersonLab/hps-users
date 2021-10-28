@@ -34,6 +34,7 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
     private boolean _skimEvents = false;
     private double pScale = 1.761 / 2.09;
     private double fee_cut = 2.8;
+    private double _maxDeltaTrackTime = 4.;
 
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
@@ -109,7 +110,7 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
             aida.histogram1D("psumCorr", 100, 0., 7.).fill(psumCorr);
             aida.histogram1D("pdiffCorr", 100, -3.0, 3.0).fill(pdiffCorr);
 
-            if (abs(deltaTrackTime) < 4) {
+            if (abs(deltaTrackTime) < _maxDeltaTrackTime) {
                 aida.tree().mkdirs("delta time cut");
                 aida.tree().cd("delta time cut");
 
@@ -215,5 +216,9 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
 
     public void setSkimEvents(boolean b) {
         _skimEvents = b;
+    }
+
+    public void setMaxDeltaTrackTime(double d) {
+        _maxDeltaTrackTime = d;
     }
 }
