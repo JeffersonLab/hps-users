@@ -90,11 +90,23 @@ public class SvtWireTargetAnalysis extends Driver {
                 if (pdgId == -11) {
                     charge = 1;
                 }
+                String pType = "";
+                switch (charge) {
+                    case -1:
+                        pType = " electron";
+                        break;
+                    case 1:
+                        pType = " positron";
+                        break;
+                }
 //            accumulatedTracks.add(track);
 //            accumulatedBTracks.add(new BilliorTrack(track));
 
 //TODO add some quality cuts on the track, e.g. nHits, associated cluster, charge, etc.
                 if (!rp.getClusters().isEmpty()) {
+                    double eclus = rp.getClusters().get(0).getEnergy();
+                    double trackMom = rp.getMomentum().magnitude();
+                    double EoverP = eclus / trackMom;
                     int nHits = track.getTrackerHits().size();
                     if (nHits > 9) {
                         if (track.getTrackStates().get(0).getTanLambda() > 0) {
@@ -102,11 +114,17 @@ public class SvtWireTargetAnalysis extends Driver {
                             accumulatedBTracksTop.add(new BilliorTrack(track));
                             aida.histogram1D("track sign bottom", 3, -1., 2.).fill(charge);
                             aida.histogram1D("nhits track top " + charge, 15, -.5, 14.5).fill(nHits);
+                            aida.histogram1D("track momentum top" + pType, 100, 0., 5.).fill(trackMom);
+                            aida.histogram1D("cluster energy top" + pType, 100, 0., 3.).fill(eclus);
+                            aida.histogram1D("E over P top" + pType, 100, 0., 2.).fill(EoverP);
                         } else {
 //                accumulatedTracksBot.add(track);
                             accumulatedBTracksBot.add(new BilliorTrack(track));
                             aida.histogram1D("track sign bottom", 3, -1., 2.).fill(charge);
                             aida.histogram1D("nhits track bottom " + charge, 15, -.5, 14.5).fill(nHits);
+                            aida.histogram1D("track momentum bottom" + pType, 100, 0., 5.).fill(trackMom);
+                            aida.histogram1D("cluster energy bottom" + pType, 100, 0., 3.).fill(eclus);
+                            aida.histogram1D("E over P bottom" + pType, 100, 0., 2.).fill(EoverP);
                         }
                     } // end of check on nHits
                 } // end of check on associated ECal cluster
