@@ -58,7 +58,7 @@ public class SvtWireTargetAnalysis extends Driver {
         bField = fieldMap.getField(ip).y();
         for (int i = -10; i < 490; ++i) {
             double by = fieldMap.getField(new BasicHep3Vector(0., 0., i)).y();
-            System.out.println(i + " : " + by);
+//            System.out.println(i + " : " + by);
             aida.histogram1D("Fieldmap By at z", 500, -10., 490.).fill(i, -by);
         }
 
