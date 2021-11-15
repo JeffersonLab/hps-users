@@ -76,6 +76,27 @@ public class SvtWireTargetAnalysis extends Driver {
             aida.histogram2D(vtxFolder + "vtx_x_y" + vol, 200, -3, 3, 200, -1, 1);
             aida.histogram1D(vtxFolder + "vtx_chi2" + vol, 200, 0, 8000);
             aida.histogram1D(vtxFolder + "vtx_ntrks" + vol, 200, 0, 200);
+
+            aida.histogram1D("track sign top", 3, -1., 2.);
+            aida.histogram1D("track sign bottom", 3, -1., 2.);
+
+            aida.histogram1D("nhits track top electron", 15, -.5, 14.5);
+            aida.histogram1D("track momentum top electron", 100, 0., 7.);
+            aida.histogram1D("cluster energy top electron", 100, 0., 7.);
+            aida.histogram1D("E over P top electron", 100, 0., 2.);
+            aida.histogram1D("nhits track top positron", 15, -.5, 14.5);
+            aida.histogram1D("track momentum top positron", 100, 0., 7.);
+            aida.histogram1D("cluster energy top positron", 100, 0., 7.);
+            aida.histogram1D("E over P top positron", 100, 0., 2.);
+
+            aida.histogram1D("nhits track bottom electron", 15, -.5, 14.5);
+            aida.histogram1D("track momentum bottom electron", 100, 0., 7.);
+            aida.histogram1D("cluster energy bottom electron", 100, 0., 7.);
+            aida.histogram1D("E over P bottom electron", 100, 0., 2.);
+            aida.histogram1D("nhits track bottom positron", 15, -.5, 14.5);
+            aida.histogram1D("track momentum bottom positron", 100, 0., 7.);
+            aida.histogram1D("cluster energy bottom positron", 100, 0., 7.);
+            aida.histogram1D("E over P bottom positron", 100, 0., 2.);
         }
     }
 
@@ -112,19 +133,19 @@ public class SvtWireTargetAnalysis extends Driver {
                         if (track.getTrackStates().get(0).getTanLambda() > 0) {
 //                accumulatedTracksTop.add(track);
                             accumulatedBTracksTop.add(new BilliorTrack(track));
-                            aida.histogram1D("track sign bottom", 3, -1., 2.).fill(charge);
-                            aida.histogram1D("nhits track top " + charge, 15, -.5, 14.5).fill(nHits);
-                            aida.histogram1D("track momentum top" + pType, 100, 0., 5.).fill(trackMom);
-                            aida.histogram1D("cluster energy top" + pType, 100, 0., 3.).fill(eclus);
-                            aida.histogram1D("E over P top" + pType, 100, 0., 2.).fill(EoverP);
+                            aida.histogram1D("track sign top").fill(charge);
+                            aida.histogram1D("nhits track top" + pType).fill(nHits);
+                            aida.histogram1D("track momentum top" + pType).fill(trackMom);
+                            aida.histogram1D("cluster energy top" + pType).fill(eclus);
+                            aida.histogram1D("E over P top" + pType).fill(EoverP);
                         } else {
 //                accumulatedTracksBot.add(track);
                             accumulatedBTracksBot.add(new BilliorTrack(track));
-                            aida.histogram1D("track sign bottom", 3, -1., 2.).fill(charge);
-                            aida.histogram1D("nhits track bottom " + charge, 15, -.5, 14.5).fill(nHits);
-                            aida.histogram1D("track momentum bottom" + pType, 100, 0., 5.).fill(trackMom);
-                            aida.histogram1D("cluster energy bottom" + pType, 100, 0., 3.).fill(eclus);
-                            aida.histogram1D("E over P bottom" + pType, 100, 0., 2.).fill(EoverP);
+                            aida.histogram1D("track sign bottom").fill(charge);
+                            aida.histogram1D("nhits track bottom" + pType).fill(nHits);
+                            aida.histogram1D("track momentum bottom" + pType).fill(trackMom);
+                            aida.histogram1D("cluster energy bottom" + pType).fill(eclus);
+                            aida.histogram1D("E over P bottom" + pType).fill(EoverP);
                         }
                     } // end of check on nHits
                 } // end of check on associated ECal cluster
