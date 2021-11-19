@@ -71,4 +71,24 @@ public class SkimGoldenFee2021 extends Driver {
     protected void endOfData() {
         System.out.println("Selected " + _numberOfEventsSelected + " golden FEEs of " + _numberOfEventsProcessed + "  events processed");
     }
+
+    public void setMaxNClusters(int i) {
+        _maxNClusters = i;
+    }
+
+    public void setMinHitsOnTrack(int i) {
+        _minHitsOnTrack = i;
+    }
+
+    public void setMinClusterEnergy(double d) {
+        _minClusterEnergy = d;
+    }
+
+    public void setMinSeedHitEnergy(double d) {
+        _minSeedHitEnergy = d;
+    }
+
+    public void setRequireFiducialFee(boolean b) {
+        _requireFiducialFee = b;
+    }
 }
