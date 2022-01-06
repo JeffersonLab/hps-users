@@ -35,8 +35,8 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
     private int _maxNClusters = 3;
     private double _minClusterEnergy = 3.0;
     private double _minSeedHitEnergy = 2.1;
-    private boolean _requireFiducialFee = true;
-    private boolean _requirePositronSideFee = true;
+    private boolean _requireFiducialFee = false;
+    private boolean _requirePositronSideFee = false;
     private boolean _requireFiducialWab = false;
     private double _cluster1MinEnergy = 1.8;
     private double _cluster1MaxEnergy = 2.8;
@@ -360,6 +360,10 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
 
     public void setRequireFiducialFee(boolean b) {
         _requireFiducialFee = b;
+    }
+
+    public void setRequirePositronSideFee(boolean b) {
+        _requirePositronSideFee = b;
     }
 
     public void setRequireFiducialWab(boolean b) {
