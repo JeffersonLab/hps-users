@@ -7,10 +7,17 @@ import static java.lang.Math.sqrt;
 import java.util.ArrayList;
 import java.util.List;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
+import org.hps.recon.tracking.TrackData;
 import org.hps.record.triggerbank.TriggerModule;
 import org.lcsim.event.CalorimeterHit;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
+import org.lcsim.event.GenericObject;
+import org.lcsim.event.LCRelation;
+import org.lcsim.event.ReconstructedParticle;
+import org.lcsim.event.RelationalTable;
+import org.lcsim.event.Track;
+import org.lcsim.event.base.BaseRelationalTable;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
 
@@ -26,10 +33,11 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
     private int _numberOfEventsProcessed = 0;
 
     private int _maxNClusters = 3;
-    private double _minClusterEnergy = 2.0;
-    private double _minSeedHitEnergy = 1.9;
+    private double _minClusterEnergy = 3.0;
+    private double _minSeedHitEnergy = 2.1;
     private boolean _requireFiducialFee = true;
-    private boolean _requireFiducialWab = true;
+    private boolean _requirePositronSideFee = true;
+    private boolean _requireFiducialWab = false;
     private double _cluster1MinEnergy = 1.8;
     private double _cluster1MaxEnergy = 2.8;
     private double _cluster2MinEnergy = 0.5;
@@ -40,6 +48,8 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
     private boolean _skimWab = true;
     private boolean _skimTrident = true;
 
+    Cluster FeeCluster = null;
+
     protected void process(EventHeader event) {
         boolean skipEvent = true;
         _numberOfEventsProcessed++;
@@ -48,9 +58,13 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
         if (_skimWab) {
             isWabCandidate = isWabCandidate(ecalClusters);
         }
+
         boolean isFeeCandidate = false;
         if (_skimFee) {
             isFeeCandidate = isFeeCandidate(ecalClusters);
+            if (isFeeCandidate && FeeCluster != null) {
+                analyzeReconstructedParticles(event, FeeCluster);
+            }
         }
         boolean isTridentCandidate = false;
         if (_skimTrident) {
@@ -73,6 +87,7 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
         aida.tree().cd("fee candidate analysis");
         aida.histogram1D("number of clusters", 10, -0.5, 9.5).fill(ecalClusters.size());
         int nClusters = ecalClusters.size();
+
         if (ecalClusters.size() > 0 && nClusters <= _maxNClusters) {
             for (Cluster cluster : ecalClusters) {
                 //System.out.println("cluster energy "+cluster.getEnergy());
@@ -85,7 +100,13 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
                         if (_requireFiducialFee && !clusterIsFiducial) {
                             isFeeCandidate = false;
                         }
+                        if (_requirePositronSideFee) {
+                            if (cluster.getPosition()[0] < 0.) {
+                                isFeeCandidate = false;
+                            }
+                        }
                         if (isFeeCandidate) {
+                            FeeCluster = cluster;
                             CalorimeterHit seed = cluster.getCalorimeterHits().get(0);
                             int ix = seed.getIdentifierFieldValue("ix");
                             int iy = seed.getIdentifierFieldValue("iy");
@@ -107,6 +128,7 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
                 }
             }
         }
+
         aida.tree().cd("..");
         return isFeeCandidate;
     }
@@ -268,6 +290,55 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
 
     private double sinTheta(double[] p) {
         return p[1] / sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
+    }
+
+    private void analyzeReconstructedParticles(EventHeader event, Cluster FeeCluster) {
+        List<ReconstructedParticle> rps = event.get(ReconstructedParticle.class, "FinalStateParticles_KF");
+        Track FeeTrack = null;
+        // find the electron associated with this cluster (if any)
+        for (ReconstructedParticle rp : rps) {
+            if (rp.getParticleIDUsed().getPDG() == 11) {
+                if (!rp.getClusters().isEmpty()) {
+                    if (rp.getClusters().get(0) == FeeCluster) {
+                        FeeTrack = rp.getTracks().get(0);
+                    }
+                }
+            }
+        }
+        // Found a track associated with the FEE cluster
+        if (FeeTrack != null) {
+            RelationalTable trackToData = getKFTrackDataRelations(event);
+            double feeTrackTime = ((GenericObject) trackToData.from(FeeTrack)).getFloatVal(0);
+            aida.histogram1D("FEE Track time", 100, -30., 30.).fill(feeTrackTime);
+            // get all the tracks in the event, and plot delta time
+            if (FeeTrack.getTrackerHits().size() > 10) {
+                List<Track> tracks = event.get(Track.class, "KalmanFullTracks");
+                for (Track t : tracks) {
+                    if (t != FeeTrack) {
+                        double trackTime = ((GenericObject) trackToData.from(t)).getFloatVal(0);
+                        int nHits = t.getTrackerHits().size();
+                        aida.histogram1D("FEE Track time - track time", 100, -100., 100.).fill(feeTrackTime - trackTime);
+                        aida.histogram1D("FEE Track time - track time " + nHits, 100, -100., 100.).fill(feeTrackTime - trackTime);
+                    }
+                }
+            }
+        }
+    }
+
+    public RelationalTable getKFTrackDataRelations(EventHeader event) {
+
+        List<TrackData> TrackData;
+        RelationalTable trackToData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
+        List<LCRelation> trackRelations;
+        TrackData trackdata;
+        TrackData = event.get(TrackData.class, "KFTrackData");
+        trackRelations = event.get(LCRelation.class, "KFTrackDataRelations");
+        for (LCRelation relation : trackRelations) {
+            if (relation != null && relation.getTo() != null) {
+                trackToData.add(relation.getFrom(), relation.getTo());
+            }
+        }
+        return trackToData;
     }
 
     @Override
