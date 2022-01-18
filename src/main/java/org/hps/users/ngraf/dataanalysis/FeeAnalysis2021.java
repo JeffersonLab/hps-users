@@ -57,8 +57,11 @@ public class FeeAnalysis2021 extends Driver {
 
     Map<String, DescriptiveStatistics> _channelMaps = new HashMap<>();
 
+    private SvtSensorTimeCorrector timeCorrector;
+
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
+        timeCorrector = new SvtSensorTimeCorrector();
     }
 
     protected void process(EventHeader event) {
@@ -223,17 +226,26 @@ public class FeeAnalysis2021 extends Driver {
             String torb = clus.getPosition()[1] > 0 ? "top" : "bottom";
             Track track = rp.getTracks().get(0);
             double trackTime = ((GenericObject) _trackToData.from(track)).getFloatVal(0);
-            aida.cloud1D("Track time - cluster time").fill(trackTime - clusterTime);
-            aida.cloud1D("Track time").fill(trackTime);
+            aida.histogram1D("Track time - cluster time", 100, -70., -30.).fill(trackTime - clusterTime);
+            aida.histogram1D("Track time",100, -20., 0.).fill(trackTime);
             aida.histogram1D("cluster time " + torb, 100, 30., 50.).fill(clusterTime);
+            double correctedTrackTime = timeCorrector.correctTrackTime(track);
+            aida.histogram1D("Track time corrected - cluster time", 100, -70., -30.).fill(correctedTrackTime - clusterTime);
+            aida.histogram1D("Track time corrected",100, -20., 0.).fill(correctedTrackTime);
+            aida.cloud1D("Track time - track time corrected").fill(trackTime - correctedTrackTime);
+
             if (clus.getPosition()[1] > 0) {
                 aida.histogram1D("Top cluster energy ", 200, 0.0, 10.0).fill(clus.getEnergy());
-                aida.cloud1D("Track time - cluster time top").fill(trackTime - clusterTime);
-                aida.cloud1D("Track time top").fill(trackTime);
+                aida.histogram1D("Track time - cluster time top", 100, -70., -30.).fill(trackTime - clusterTime);
+                aida.histogram1D("Track time top",100, -20., 0.).fill(trackTime);
+                aida.histogram1D("Track time corrected - cluster time top", 100, -70., -30.).fill(correctedTrackTime - clusterTime);
+                aida.cloud1D("Track time corrected top").fill(correctedTrackTime);
             } else {
                 aida.histogram1D("Bottom cluster energy ", 200, 0.0, 10.0).fill(clus.getEnergy());
-                aida.cloud1D("Track time - cluster time bottom").fill(trackTime - clusterTime);
-                aida.cloud1D("Track time bottom").fill(trackTime);
+                aida.histogram1D("Track time - cluster time bottom", 100, -70., -30.).fill(trackTime - clusterTime);
+                aida.histogram1D("Track time bottom", 100, -20., 0.).fill(trackTime);
+                aida.histogram1D("Track time corrected - cluster time bottom", 100, -70., -30.).fill(correctedTrackTime - clusterTime);
+                aida.cloud1D("Track time corrected bottom").fill(correctedTrackTime);
             }
 
             for (TrackerHit hit : track.getTrackerHits()) {
@@ -243,7 +255,7 @@ public class FeeAnalysis2021 extends Driver {
                 String sensorName = sensor.getName();
                 double time = hit.getTime();
                 aida.histogram1D(sensorName + " hit time", 100, -30., 20.).fill(time);
-                aida.histogram1D(sensorName + " hit time - cluster time", 100, -80., 20.).fill(time - clusterTime);
+                aida.histogram1D(sensorName + " hit time - cluster time", 100, -70., -30.).fill(time - clusterTime);
             }
             aida.tree().cd("..");
         }
