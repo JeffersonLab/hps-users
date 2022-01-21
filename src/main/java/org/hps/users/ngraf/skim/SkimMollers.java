@@ -25,9 +25,11 @@ public class SkimMollers extends Driver {
         _numberOfEventsProcessed++;
 
         for (String mollerCollectionName : mollerCollectionNames) {
-            List<ReconstructedParticle> mollers = event.get(ReconstructedParticle.class, mollerCollectionName);
-            if (!mollers.isEmpty()) {
-                skipEvent = false;
+            if (event.hasCollection(ReconstructedParticle.class, mollerCollectionName)) {
+                List<ReconstructedParticle> mollers = event.get(ReconstructedParticle.class, mollerCollectionName);
+                if (!mollers.isEmpty()) {
+                    skipEvent = false;
+                }
             }
         }
 
