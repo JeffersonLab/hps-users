@@ -61,6 +61,7 @@ public class FieldOffAnalysis extends Driver {
     private double _minClusterEnergy = 2.0;
     private double _maxChisq = 500.;
     private int _minHitsToFit = 8;
+    private String _holeOrSlot = "Slot"; //"Hole";
     // initial guess for (x,y,z) of track origin
     // TODO get estimate for x of beam on wire. Was x=-63 in 2016
     private double[] A0 = {0., 0., -2267.};
@@ -164,8 +165,9 @@ public class FieldOffAnalysis extends Driver {
                 String topOrBottom = clus.getPosition()[1] > 0 ? "top " : "bottom ";
                 boolean isTop = clus.getPosition()[1] > 0;
                 List<String> sensorNames = isTop ? topHoleSensorNamesToFit : bottomHoleSensorNamesToFit;
-//                List<String> sensorNames = isTop ? topSlotSensorNamesToFit : bottomSlotSensorNamesToFit;
-
+                if (_holeOrSlot.equals("Slot")) {
+                    sensorNames = isTop ? topSlotSensorNamesToFit : bottomSlotSensorNamesToFit;
+                }
                 Point3D P0 = new Point3D(H02Wire[0], H02Wire[1], H02Wire[2]);
                 double[] cPos = clus.getPosition();
                 Point3D P1 = new Point3D(cPos[0], cPos[1], cPos[2]);
@@ -629,5 +631,9 @@ public class FieldOffAnalysis extends Driver {
 
     public void setMaxChisq(double d) {
         _maxChisq = d;
+    }
+
+    public void setHoleOrSlot(String s) {
+        _holeOrSlot = s;
     }
 }
