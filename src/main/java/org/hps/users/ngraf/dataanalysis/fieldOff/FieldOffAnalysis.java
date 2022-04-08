@@ -3,6 +3,10 @@ package org.hps.users.ngraf.dataanalysis.fieldOff;
 import Jama.Matrix;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import static java.lang.Math.abs;
 import static java.lang.Math.signum;
 import java.net.URISyntaxException;
@@ -124,14 +128,16 @@ public class FieldOffAnalysis extends Driver {
             "module_L7b_halfmodule_axial_slot_sensor0");
 
     protected void detectorChanged(Detector detector) {
-        Path resourcePath = null;
-        try {
-            resourcePath = Paths.get(getClass().getClassLoader().getResource("org/hps/alignment/HPS_Run2021Pass1Top_20211110.txt").toURI());
-        } catch (URISyntaxException ex) {
-            Logger.getLogger(StraightTrackAnalysisDriver.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        System.out.println(resourcePath);
-        _defaultDetector = new DetectorBuilder(resourcePath);
+//        Path resourcePath = null;
+//        try {
+//            resourcePath = Paths.get(getClass().getClassLoader().getResource("org/hps/alignment/HPS_Run2021Pass1Top_20211110.txt").toURI());
+//        } catch (URISyntaxException ex) {
+//            Logger.getLogger(StraightTrackAnalysisDriver.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//        System.out.println(resourcePath);
+        List<String> list = ReadFromJar.readTextFromJar("HPS_Run2021Pass1Top_20211110.txt");
+        System.out.println(list.get(0));
+        _defaultDetector = new DetectorBuilder(list);
     }
 
     public void process(EventHeader event) {
@@ -156,7 +162,7 @@ public class FieldOffAnalysis extends Driver {
                 }
                 aida.histogram1D("Cluster Energy", 100, 0., 6.).fill(clus.getEnergy());
                 if (debug) {
-                    System.out.println(eventNumber + " found cluster with " + clus.getEnergy());
+                    System.out.println(eventNumber + " found cluster with " + clus.getEnergy() + " at " + Arrays.toString(clus.getPosition()));
                 }
                 //OK, we have a good, high-energy cluster in tthe calorimeter...
                 boolean isFiducial = TriggerModule.inFiducialRegion(clus);
@@ -180,10 +186,23 @@ public class FieldOffAnalysis extends Driver {
                     List rthList = hit.getRawHits();
                     String moduleName = ((RawTrackerHit) rthList.get(0)).getDetectorElement().getName();
                     if (sensorNames.contains(moduleName)) {
+                        if (debug) {
+                            System.out.println(moduleName);
+                            SiTrackerHitStrip1D debugStripHit = new SiTrackerHitStrip1D(hit);
+                            System.out.println("u: " + ((RawTrackerHit) debugStripHit.getRawHits().get(0)).getDetectorElement().getGeometry().getGlobalToLocal().transformed(new BasicHep3Vector(debugStripHit.getPosition())).x());
+                            System.out.println("pos: " + Arrays.toString(debugStripHit.getPosition()));
+                        }
                         if (!hitsPerModuleMap.containsKey(moduleName)) {
                             hitsPerModuleMap.put(moduleName, new ArrayList<SiTrackerHitStrip1D>());
+                            if (debug) {
+                                System.out.println("creating ArrayList for " + moduleName);
+                                System.out.println("Adding hit to ArrayList for " + moduleName);
+                            }
                             hitsPerModuleMap.get(moduleName).add(new SiTrackerHitStrip1D(hit));
                         } else {
+                            if (debug) {
+                                System.out.println("Adding hit to ArrayList for " + moduleName);
+                            }
                             hitsPerModuleMap.get(moduleName).add(new SiTrackerHitStrip1D(hit));
                         }
                     }
@@ -192,28 +211,47 @@ public class FieldOffAnalysis extends Driver {
                 Map<String, SiTrackerHitStrip1D> hitsToFit = new LinkedHashMap<>();
                 Map<String, DetectorPlane> detectorPlanesInFit = new LinkedHashMap<>();
 
-                String trackingDetectorName = cPos[1] > 0 ? "topHole" : "bottomHole"; // work on slot later
+                String trackingDetectorName = cPos[1] > 0 ? "topHole" : "bottomHole";
+                if (_holeOrSlot.equals("Slot")) {
+                    trackingDetectorName = cPos[1] > 0 ? "topSlot" : "bottomSlot";
+                }
                 List<DetectorPlane> td = _defaultDetector.getTracker(trackingDetectorName);
                 String[] trackerSensorNames = _defaultDetector.getTrackerSensorNames(trackingDetectorName);
                 double maxDist = 5.0; //50.;//20.;
+                if (debug) {
+                    System.out.println("Looping over DetectorPlanes in _defaultDetector:");
+                }
                 for (DetectorPlane dp : td) {
                     String moduleName = trackerSensorNames[dp.id() - 1];
+                    if (debug) {
+                        System.out.println(moduleName);
+                    }
 //                System.out.println(moduleName);
                     if (hitsPerModuleMap.containsKey(moduleName)) {
-//                    System.out.println(moduleName + " has " + hitsPerModuleMap.get(moduleName).size() + " strip hit clusters");
-
+                        if (debug) {
+                            System.out.println(moduleName + " has " + hitsPerModuleMap.get(moduleName).size() + " strip hit clusters");
+                        }
                         // get the best hit in this layer associated with this cluster                     
                         SiTrackerHitStrip1D closest = null;
                         double d = 9999.;
                         for (SiTrackerHitStrip1D stripHit : hitsPerModuleMap.get(moduleName)) {
                             // are we in time?
                             double t = stripHit.getTime();
+                            if (debug) {
+                                System.out.println(moduleName + " hit time: " + t);
+                            }
                             if (-20. < t && t < 0.) {
                                 // calculate the intercept of the straight track with this sensor...
                                 Hep3Vector intercept = StraightTrackUtils.linePlaneIntersect(P0, P1, dp.origin(), dp.normal());
                                 // calculate the distance between this point and the strip
                                 LineSegment3D stripLine = stripHit.getHitSegment();
                                 double dist = stripLine.distanceTo(new Point3D(intercept));
+                                if (debug) {
+                                    System.out.println("intercept: " + intercept);
+                                    System.out.println("stripLine: " + stripLine.getLine().getStartPoint().getHep3Vector() + " to " + stripLine.getLine().getEndPoint(100.).getHep3Vector());
+                                    System.out.println("distance stripLine to intercept: " + dist);
+                                }
+
 //                        double d2 = VecOp.cross(stripLine.getDirection(),VecOp.sub(intercept,stripLine.getStartPoint())).magnitude();
 //                        System.out.println("dist "+dist+" d2 "+d2);
                                 if (abs(dist) < d) {
@@ -623,6 +661,35 @@ public class FieldOffAnalysis extends Driver {
 //            aida.cloud1D(sensorName + " hit time - cluster time cloud").fill(t - tClus);
         }
         aida.tree().cd("..");
+    }
+
+    public static List<String> readTextFromJar(String s) {
+        InputStream is = null;
+        BufferedReader br = null;
+        String line;
+        ArrayList<String> list = new ArrayList<String>();
+
+        try {
+            is = ReadFromJar.class.getResourceAsStream(s);
+            br = new BufferedReader(new InputStreamReader(is));
+            while (null != (line = br.readLine())) {
+                list.add(line);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return list;
     }
 
     public void setMinHitsToFit(int i) {

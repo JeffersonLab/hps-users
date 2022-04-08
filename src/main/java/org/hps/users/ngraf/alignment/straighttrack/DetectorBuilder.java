@@ -4,9 +4,11 @@ import Jama.Matrix;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
 import hep.physics.vec.VecOp;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -186,6 +188,78 @@ public class DetectorBuilder {
         } catch (IOException ex) {
             Logger.getLogger(DetectorBuilder.class.getName()).log(Level.SEVERE, null, ex);
         }
+        //List<DetectorPlane> planes = new ArrayList<DetectorPlane>();
+        // first line is the detector name
+        _detectorName = lines.remove(0);
+        // rest is plane data (get it?)
+        for (String line : lines) {
+            if (_debug) {
+                System.out.println(line);
+            }
+            String[] s = line.split("\\s+");
+            int id = Integer.valueOf(s[0]);
+            String stripPlaneName = s[1];
+            double[] hpsAngles = arrayFromStrings(s, aIndex);
+            Hep3Vector origin = hep3vectorFromStrings(s, oIndex);
+            Hep3Vector uDir = hep3vectorFromStrings(s, uIndex);
+            Hep3Vector vDir = hep3vectorFromStrings(s, vIndex);
+            Hep3Vector normal = hep3vectorFromStrings(s, wIndex);
+            double width = Double.valueOf(s[32]);
+            double height = Double.valueOf(s[33]);
+            double zmin = Double.valueOf(s[34]);
+            double zmax = Double.valueOf(s[35]);
+            if (_debug) {
+                System.out.println(" " + stripPlaneName);
+                System.out.println("   origin: " + origin);
+                System.out.println("   normal: " + normal);
+                System.out.println("   uDir: " + uDir);
+                System.out.println("   vDir: " + vDir);
+                System.out.println("   Apache commons angles: " + Arrays.toString(hpsAngles));
+                System.out.println("zmin " + zmin + " zmax " + zmax);
+            }
+            DetectorPlane dp = new DetectorPlane(id++, matrixFromAngles(hpsAngles), origin.v(), SIGS);
+            dp.setName(stripPlaneName);
+            dp.setUVWR(uDir, vDir, normal, origin);
+            dp.setDimensions(width, height, zmin, zmax);
+            dp.setAngles(hpsAngles);
+            //planes.add(dp);
+            if (_debug) {
+                System.out.println("  " + dp);
+            }
+            planeMap.put(dp.name(), dp);
+        }
+        if (_debug) {
+            System.out.println("Populated planemap with " + planeMap.size() + " planes");
+        }
+        for (Tracker t : Tracker.values()) {
+            String s = t.trackerName();
+            if (_debug) {
+                System.out.println("building " + s + " : ");
+            }
+            String[] stripNames = sensorNameMap.get(s);
+            List<DetectorPlane> planes = new ArrayList<DetectorPlane>();
+            int id = 1;
+            for (String stripPlaneName : stripNames) {
+                planes.add(planeMap.get(stripPlaneName));
+            }
+            trackerMap.put(s, planes);
+            if (_debug) {
+                System.out.println("TrackerMap " + s + " has " + planes.size() + " planes");
+            }
+        }
+
+    }
+    
+    public DetectorBuilder(List<String> lines) {
+        sensorNameMap.put("topHole", topHoleNames);
+        sensorNameMap.put("bottomHole", bottomHoleNames);
+        sensorNameMap.put("topSlot", topSlotNames);
+        sensorNameMap.put("bottomSlot", bottomSlotNames);
+        int oIndex = 2;
+        int uIndex = 8;
+        int vIndex = 14;
+        int wIndex = 20;
+        int aIndex = 26;
         //List<DetectorPlane> planes = new ArrayList<DetectorPlane>();
         // first line is the detector name
         _detectorName = lines.remove(0);
