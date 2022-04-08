@@ -249,7 +249,7 @@ public class DetectorBuilder {
         }
 
     }
-    
+
     public DetectorBuilder(List<String> lines) {
         sensorNameMap.put("topHole", topHoleNames);
         sensorNameMap.put("bottomHole", bottomHoleNames);
@@ -749,9 +749,10 @@ public class DetectorBuilder {
 
     public static void main(String[] args) throws Exception {
         String detectorName = "HPS-PhysicsRun2019-v2-4pt5";
-        if (args.length > 1) {
+        if (args.length > 0) {
             detectorName = args[0];
         }
+        System.out.println("Building "+detectorName);
         DetectorBuilder db = new DetectorBuilder(detectorName);
 
         List<DetectorPlane> planes = db.getTracker("topSlot");
@@ -761,7 +762,7 @@ public class DetectorBuilder {
         }
 
         db.drawDetector();
-
+        db.archiveIt("test");
     }
 
     public Map<String, DetectorPlane> planeMap() {

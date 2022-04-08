@@ -65,7 +65,9 @@ public class FieldOffAnalysis extends Driver {
     private double _minClusterEnergy = 2.0;
     private double _maxChisq = 500.;
     private int _minHitsToFit = 8;
-    private String _holeOrSlot = "Slot"; //"Hole";
+    private String _holeOrSlot = "Hole"; //"Hole" or "Slot"
+
+    private String _detectorToTest = "HPS_Run2021Pass2FEE_20220408";
     // initial guess for (x,y,z) of track origin
     // TODO get estimate for x of beam on wire. Was x=-63 in 2016
     private double[] A0 = {0., 0., -2267.};
@@ -135,7 +137,7 @@ public class FieldOffAnalysis extends Driver {
 //            Logger.getLogger(StraightTrackAnalysisDriver.class.getName()).log(Level.SEVERE, null, ex);
 //        }
 //        System.out.println(resourcePath);
-        List<String> list = readTextFromJar("HPS_Run2021Pass1Top_20211110.txt");
+        List<String> list = readTextFromJar(_detectorToTest+".txt");
         System.out.println(list.get(0));
         _defaultDetector = new DetectorBuilder(list);
     }
@@ -148,6 +150,8 @@ public class FieldOffAnalysis extends Driver {
         if (debug) {
             System.out.println(eventNumber + "");
         }
+        aida.tree().mkdirs(_detectorToTest+" "+_holeOrSlot+" analysis");
+        aida.tree().cd(_detectorToTest+" "+_holeOrSlot+" analysis");
         if (event.hasCollection(Cluster.class, "EcalClustersCorr")) {
             List<Cluster> clusters = event.get(Cluster.class, "EcalClustersCorr");
             aida.histogram1D("Number of Clusters in Event", 10, -0.5, 9.5).fill(clusters.size());
@@ -429,6 +433,7 @@ public class FieldOffAnalysis extends Driver {
                 }
             } // end of processing of good cluster
         } // end of check on cluster collection
+        aida.tree().cd("..");
         // did we find a good candidate?
         if (skipEvent) {
             throw new Driver.NextEventException();
@@ -663,7 +668,7 @@ public class FieldOffAnalysis extends Driver {
         aida.tree().cd("..");
     }
 
-    public  List<String> readTextFromJar(String s) {
+    public List<String> readTextFromJar(String s) {
         InputStream is = null;
         BufferedReader br = null;
         String line;
@@ -702,5 +707,9 @@ public class FieldOffAnalysis extends Driver {
 
     public void setHoleOrSlot(String s) {
         _holeOrSlot = s;
+    }
+
+    public void setDetectorToTest(String s) {
+        _detectorToTest = s;
     }
 }
