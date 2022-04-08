@@ -135,7 +135,7 @@ public class FieldOffAnalysis extends Driver {
 //            Logger.getLogger(StraightTrackAnalysisDriver.class.getName()).log(Level.SEVERE, null, ex);
 //        }
 //        System.out.println(resourcePath);
-        List<String> list = ReadFromJar.readTextFromJar("HPS_Run2021Pass1Top_20211110.txt");
+        List<String> list = readTextFromJar("HPS_Run2021Pass1Top_20211110.txt");
         System.out.println(list.get(0));
         _defaultDetector = new DetectorBuilder(list);
     }
@@ -663,14 +663,14 @@ public class FieldOffAnalysis extends Driver {
         aida.tree().cd("..");
     }
 
-    public static List<String> readTextFromJar(String s) {
+    public  List<String> readTextFromJar(String s) {
         InputStream is = null;
         BufferedReader br = null;
         String line;
         ArrayList<String> list = new ArrayList<String>();
 
         try {
-            is = ReadFromJar.class.getResourceAsStream(s);
+            is = FieldOffAnalysis.class.getResourceAsStream(s);
             br = new BufferedReader(new InputStreamReader(is));
             while (null != (line = br.readLine())) {
                 list.add(line);
