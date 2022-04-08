@@ -59,7 +59,8 @@ public class FieldOffAnalysis extends Driver {
 
     private DetectorBuilder _defaultDetector;
     private double _minClusterEnergy = 2.0;
-    private double maxChisq = 200.;
+    private double _maxChisq = 500.;
+    private int _minHitsToFit = 8;
     // initial guess for (x,y,z) of track origin
     // TODO get estimate for x of beam on wire. Was x=-63 in 2016
     private double[] A0 = {0., 0., -2267.};
@@ -192,7 +193,7 @@ public class FieldOffAnalysis extends Driver {
                 String trackingDetectorName = cPos[1] > 0 ? "topHole" : "bottomHole"; // work on slot later
                 List<DetectorPlane> td = _defaultDetector.getTracker(trackingDetectorName);
                 String[] trackerSensorNames = _defaultDetector.getTrackerSensorNames(trackingDetectorName);
-                double maxDist = 50.;//20.;
+                double maxDist = 5.0; //50.;//20.;
                 for (DetectorPlane dp : td) {
                     String moduleName = trackerSensorNames[dp.id() - 1];
 //                System.out.println(moduleName);
@@ -203,23 +204,27 @@ public class FieldOffAnalysis extends Driver {
                         SiTrackerHitStrip1D closest = null;
                         double d = 9999.;
                         for (SiTrackerHitStrip1D stripHit : hitsPerModuleMap.get(moduleName)) {
-                            // calculate the intercept of the straight track with this sensor...
-                            Hep3Vector intercept = StraightTrackUtils.linePlaneIntersect(P0, P1, dp.origin(), dp.normal());
-                            // calculate the distance between this point and the strip
-                            LineSegment3D stripLine = stripHit.getHitSegment();
-                            double dist = stripLine.distanceTo(new Point3D(intercept));
+                            // are we in time?
+                            double t = stripHit.getTime();
+                            if (-20. < t && t < 0.) {
+                                // calculate the intercept of the straight track with this sensor...
+                                Hep3Vector intercept = StraightTrackUtils.linePlaneIntersect(P0, P1, dp.origin(), dp.normal());
+                                // calculate the distance between this point and the strip
+                                LineSegment3D stripLine = stripHit.getHitSegment();
+                                double dist = stripLine.distanceTo(new Point3D(intercept));
 //                        double d2 = VecOp.cross(stripLine.getDirection(),VecOp.sub(intercept,stripLine.getStartPoint())).magnitude();
 //                        System.out.println("dist "+dist+" d2 "+d2);
-                            if (abs(dist) < d) {
-                                d = dist;
-                                closest = stripHit;
+                                if (abs(dist) < d) {
+                                    d = dist;
+                                    closest = stripHit;
+                                }
                             }
                         }
+                        aida.histogram1D(moduleName + fid + " distance to hit", 100, 0., 50.).fill(d);
                         // are we within a reasonable distance?
                         if (abs(d) < maxDist) {
                             hitsToFit.put(moduleName, closest);
                             detectorPlanesInFit.put(moduleName, dp);
-                            aida.histogram1D(moduleName + fid + " distance to hit", 100, 0., maxDist).fill(d);
                         }
                     }
 //                System.out.println(dp.id() + " " + trackerSensorNames[dp.id()-1]);
@@ -258,13 +263,11 @@ public class FieldOffAnalysis extends Driver {
                     planes.add(detectorPlanesInFit.get(s));
                     hitsInFit.add(stripHit);
                 }
-                // require at least 8 hits for fit in top, 10 in bottom (for early runs), 9 in bottom in later runs due to missing layer 4
-                int minHitsToFit = isTop ? 8 : 8;  // only 10101 has a working layer 4...
                 aida.histogram1D(topOrBottom + fid + " number of hits to fit", 20, 0., 20.).fill(hits.size());
                 if (debug) {
                     System.out.println(eventNumber + " has " + hits.size() + " SVT hits to fit");
                 }
-                if (hits.size() >= minHitsToFit) {
+                if (hits.size() >= _minHitsToFit) {
                     analyzeHitsInFit(hitsInFit, clus);
                     aida.histogram1D(topOrBottom + fid + " number of hits in fit", 20, 0., 20.).fill(hits.size());
                     // fit the track!
@@ -273,7 +276,9 @@ public class FieldOffAnalysis extends Driver {
                         System.out.println(eventNumber + " track was fit with chisq/ndf " + fit.chisq() / fit.ndf());
                     }
                     aida.histogram1D(topOrBottom + fid + " fit chisq per ndf", 100, 0., 1000.).fill(fit.chisq() / fit.ndf());
-                    if (fit.chisq() / fit.ndf() < maxChisq) {
+//                    aida.cloud1D(topOrBottom + fid + " fit chisq per ndf cloud").fill(fit.chisq() / fit.ndf());
+
+                    if (fit.chisq() / fit.ndf() < _maxChisq) {
                         // quick check of track predicted impact points...
 //                    List<double[]> impactPoints = fit.impactPoints();
 //                    for (double[] pos : impactPoints) {
@@ -292,7 +297,7 @@ public class FieldOffAnalysis extends Driver {
                         aida.histogram1D(topOrBottom + fid + " y at z= " + fit.zPosition(), 100, -20., 20.).fill(pars[1]);
                         aida.histogram1D(topOrBottom + fid + " dXdZ at z= " + fit.zPosition(), 100, 0., 0.050).fill(pars[2]);
                         aida.histogram1D(topOrBottom + fid + " dYdZ at z= " + fit.zPosition(), 100, -0.050, 0.050).fill(pars[3]);
-                        aida.histogram1D(topOrBottom + fid + " track fit chiSquared per ndf", 100, 0., maxChisq).fill(fit.chisq() / fit.ndf());
+                        aida.histogram1D(topOrBottom + fid + " track fit chiSquared per ndf", 100, 0., _maxChisq).fill(fit.chisq() / fit.ndf());
                         double zMin = -3500.;
                         int nSteps = 250;//200;
                         int stepSize = 20;//10;
@@ -302,6 +307,7 @@ public class FieldOffAnalysis extends Driver {
                             double[] fitPos = fit.predict(d);
                             aida.histogram2D(topOrBottom + fid + " z vs x", nSteps, zMin, zMax, 200, -100., 100.).fill(d, fitPos[0]);
                             aida.histogram2D(topOrBottom + fid + " z vs y", nSteps, zMin, zMax, 200, -100., 100.).fill(d, fitPos[1]);
+                            aida.histogram2D(fid + " z vs x", nSteps, zMin, zMax, 200, -100., 100.).fill(d, fitPos[0]);
                             aida.histogram2D(fid + " z vs y", nSteps, zMin, zMax, 200, -100., 100.).fill(d, fitPos[1]);
                         }
                         double chisqProb = ChisqProb.gammp(fit.ndf(), fit.chisq());
@@ -605,13 +611,23 @@ public class FieldOffAnalysis extends Driver {
         aida.tree().cd("hits in fit analysis");
         double tClus = ClusterUtilities.findSeedHit(clus).getTime();
         String torb = clus.getPosition()[1] > 0 ? "top" : "bottom";
-        aida.histogram1D("cluster time " + torb,100, 30., 50.).fill(tClus);
+        aida.histogram1D("cluster time " + torb, 100, 30., 50.).fill(tClus);
         for (SiTrackerHitStrip1D hit : hitsInFit) {
             String sensorName = hit.getSensor().getName();
             double t = hit.getTime();
             aida.histogram1D(sensorName + " hit time", 100, -20., 0.).fill(t);
             aida.histogram1D(sensorName + " hit time - cluster time", 100, -60., -30.).fill(t - tClus);
+//            aida.cloud1D(sensorName + " hit time cloud").fill(t);
+//            aida.cloud1D(sensorName + " hit time - cluster time cloud").fill(t - tClus);
         }
         aida.tree().cd("..");
+    }
+
+    public void setMinHitsToFit(int i) {
+        _minHitsToFit = i;
+    }
+
+    public void setMaxChisq(double d) {
+        _maxChisq = d;
     }
 }
