@@ -116,14 +116,14 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
                             CalorimeterHit seed = cluster.getCalorimeterHits().get(0);
                             long cellId = seed.getCellID();
                             if (crystalOccupancyMap.containsKey(cellId)) {
-                                System.out.println("found cell "+cellId+" with "+crystalOccupancyMap.get(cellId)+" hits ");
+//                                System.out.println("found cell "+cellId+" with "+crystalOccupancyMap.get(cellId)+" hits ");
                                 crystalOccupancyMap.put(cellId, crystalOccupancyMap.get(cellId) + 1);
                             } else {
                                 crystalOccupancyMap.put(cellId, 1);
                             }
                             if (crystalOccupancyMap.get(cellId) > _maxClustersPerCrystal) {
                                 isFeeCandidate = false;
-                                System.out.println("cell "+cellId+" has "+crystalOccupancyMap.get(cellId)+" hits.");
+//                                System.out.println("cell "+cellId+" has "+crystalOccupancyMap.get(cellId)+" hits.");
                             } else {
                                 int ix = seed.getIdentifierFieldValue("ix");
                                 int iy = seed.getIdentifierFieldValue("iy");
