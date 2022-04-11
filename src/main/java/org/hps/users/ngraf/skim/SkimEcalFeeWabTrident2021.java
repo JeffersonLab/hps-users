@@ -5,7 +5,9 @@ import hep.physics.vec.Hep3Vector;
 import static java.lang.Math.abs;
 import static java.lang.Math.sqrt;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.recon.tracking.TrackData;
 import org.hps.record.triggerbank.TriggerModule;
@@ -43,6 +45,10 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
     private double _cluster2MinEnergy = 0.5;
     private double _minTridentClusterEnergy = 0.5;
     private double _maxTridentClusterEnergy = 2.5;
+    private int _minTrackerHits = 12;
+    // use this to select an even number of FEEs over the calorimeter face
+    private int _maxClustersPerCrystal = 999999;
+    private Map<Long, Integer> crystalOccupancyMap = new HashMap<>();
 
     private boolean _skimFee = true;
     private boolean _skimWab = true;
@@ -108,20 +114,32 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
                         if (isFeeCandidate) {
                             FeeCluster = cluster;
                             CalorimeterHit seed = cluster.getCalorimeterHits().get(0);
-                            int ix = seed.getIdentifierFieldValue("ix");
-                            int iy = seed.getIdentifierFieldValue("iy");
-                            aida.histogram2D("cluster ix vs iy" + fid, 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-                            aida.histogram2D("Cluster x vs y" + fid, 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
-                            aida.histogram1D("Cluster energy" + fid, 100, 2., 5.).fill(cluster.getEnergy());
-                            aida.histogram2D("Cluster energy vs seed hit energy" + fid, 100, 2.5, 5., 100, 0.5, 3.5).fill(cluster.getEnergy(), seedEnergy);
-
-                            if (cluster.getPosition()[1] > 0.) {
-                                aida.histogram1D("Top cluster energy" + fid, 100, 2., 5.).fill(cluster.getEnergy());
-                                aida.histogram1D("Top cluster energy " + nClusters + " clusters" + fid, 100, 2., 5.).fill(cluster.getEnergy());
-
+                            long cellId = seed.getCellID();
+                            if (crystalOccupancyMap.containsKey(cellId)) {
+                                System.out.println("found cell "+cellId+" with "+crystalOccupancyMap.get(cellId)+" hits ");
+                                crystalOccupancyMap.put(cellId, crystalOccupancyMap.get(cellId) + 1);
                             } else {
-                                aida.histogram1D("Bottom cluster energy" + fid, 100, 2., 5.).fill(cluster.getEnergy());
-                                aida.histogram1D("Bottom cluster energy " + nClusters + " clusters" + fid, 100, 2., 5.).fill(cluster.getEnergy());
+                                crystalOccupancyMap.put(cellId, 1);
+                            }
+                            if (crystalOccupancyMap.get(cellId) > _maxClustersPerCrystal) {
+                                isFeeCandidate = false;
+                                System.out.println("cell "+cellId+" has "+crystalOccupancyMap.get(cellId)+" hits.");
+                            } else {
+                                int ix = seed.getIdentifierFieldValue("ix");
+                                int iy = seed.getIdentifierFieldValue("iy");
+                                aida.histogram2D("cluster ix vs iy" + fid, 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                                aida.histogram2D("Cluster x vs y" + fid, 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
+                                aida.histogram1D("Cluster energy" + fid, 100, 2., 5.).fill(cluster.getEnergy());
+                                aida.histogram2D("Cluster energy vs seed hit energy" + fid, 100, 2.5, 5., 100, 0.5, 3.5).fill(cluster.getEnergy(), seedEnergy);
+
+                                if (cluster.getPosition()[1] > 0.) {
+                                    aida.histogram1D("Top cluster energy" + fid, 100, 2., 5.).fill(cluster.getEnergy());
+                                    aida.histogram1D("Top cluster energy " + nClusters + " clusters" + fid, 100, 2., 5.).fill(cluster.getEnergy());
+
+                                } else {
+                                    aida.histogram1D("Bottom cluster energy" + fid, 100, 2., 5.).fill(cluster.getEnergy());
+                                    aida.histogram1D("Bottom cluster energy " + nClusters + " clusters" + fid, 100, 2., 5.).fill(cluster.getEnergy());
+                                }
                             }
                         }
                     }
@@ -392,5 +410,13 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
 
     public void setCluster2MinEnergy(double d) {
         _cluster2MinEnergy = d;
+    }
+
+    public void setMinTrackerHits(int i) {
+        _minTrackerHits = i;
+    }
+
+    public void setMaxClustersPerCrystal(int i) {
+        _maxClustersPerCrystal = i;
     }
 }
