@@ -257,11 +257,8 @@ public class StripWABCandidates2021 extends Driver {
                                 aida.histogram1D("nhits on all electron tracks", 20, 0., 20.).fill(rp.getTracks().get(0).getTrackerHits().size());
                                 if (rp.getTracks().get(0).getTrackerHits().size() >= _nHitsOnTrack) {
                                     electron = rp;
-                                    System.out.println("rp cluster " + rp.getClusters().get(0));
                                     nElectron = nElectron + 1;
-                                    System.out.println("electron: " + electron);
                                     Cluster c1 = electron.getClusters().get(0);
-                                    System.out.println("cluster: " + c1);
                                 }
                             }
                         }
@@ -269,9 +266,7 @@ public class StripWABCandidates2021 extends Driver {
                 }
                 //now let's see if we can find an associated photon
                 if (nElectron == 1) {
-                    System.out.println("electron: " + electron);
                     Cluster c1 = electron.getClusters().get(0);
-                    System.out.println("cluster: " + c1);
                     Hep3Vector pos1 = new BasicHep3Vector(c1.getPosition());
                     for (ReconstructedParticle rp : rps) {
                         if (rp.getParticleIDUsed().getPDG() == 22) {
