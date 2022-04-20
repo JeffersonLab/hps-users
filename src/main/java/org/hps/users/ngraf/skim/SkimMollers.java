@@ -51,7 +51,7 @@ public class SkimMollers extends Driver {
                 aida.tree().mkdirs("Moller analysis " + mollerCollectionName);
                 aida.tree().cd("Moller analysis " + mollerCollectionName);
                 List<Vertex> vertices = event.get(Vertex.class, mollerCollectionName);
-                aida.histogram1D("number of vertices in event", 10, -0.5, 95.).fill(vertices.size());
+                aida.histogram1D("number of vertices in event", 10, -0.5, 9.5).fill(vertices.size());
                 for (Vertex v : vertices) {
                     ReconstructedParticle rp = v.getAssociatedParticle();
                     List<ReconstructedParticle> parts = rp.getParticles();

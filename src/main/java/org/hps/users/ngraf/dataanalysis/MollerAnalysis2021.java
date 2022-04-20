@@ -44,6 +44,16 @@ public class MollerAnalysis2021 extends Driver {
     private int _numberOfEventsProcessed = 0;
     boolean _skipEvent = true;
 
+    // track quantities
+    private double _maxDeltaTrackTime = 7.;
+    private double _track2MinimumMomentum = 1.5;
+    private double _track2MaximumMomentum = 2.5;
+    private int _track1MinimumNumberOfHits = 11;
+    private int _track2MinimumNumberOfHits = 11;
+    
+    // Moller quantities
+    private double _maxMomentumYSum = 0.04;
+
     final double pScale = 1.761 / 2.09;
 
     protected void detectorChanged(Detector detector) {
@@ -110,13 +120,13 @@ public class MollerAnalysis2021 extends Driver {
                         if (!rp.getClusters().isEmpty()) {
                             if (rp.getClusters().get(0) == clus) {
                                 // require the track to have 12 or more hits...
-                                if (rp.getTracks().get(0).getTrackerHits().size() >= 11) {
+                                if (rp.getTracks().get(0).getTrackerHits().size() >= _track1MinimumNumberOfHits) {
                                     electron1 = rp;
                                 }
                             }
                         }
                         if (rp != electron1) {
-                            if (rp.getTracks().get(0).getTrackerHits().size() >= 12) {
+                            if (rp.getTracks().get(0).getTrackerHits().size() >= _track2MinimumNumberOfHits) {
                                 electrons.add(rp);
                             }
                         }
@@ -170,24 +180,24 @@ public class MollerAnalysis2021 extends Driver {
                             aida.histogram1D("electron2 track momentum", 100, 0., 5.0).fill(track2_momentum);
                             aida.histogram1D("track2 time", 100, -40., 40.).fill(track2_time);
                             aida.histogram2D("track1 time vs track2 time", 50, -40., 40., 50, -40., 40.).fill(track1_time, track2_time);
-                            aida.histogram1D("track delta time", 100, -100., 100.).fill(track1_time - track2_time);
+                            aida.histogram1D("track delta time", 120, -60., 60.).fill(track1_time - track2_time);
                             aida.histogram1D("track sum pY", 100, -1., 1.).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
                             aida.histogram1D("electron2 number of hits on track", 20, -0.5, 19.5).fill(track2.getTrackerHits().size());
                             aida.histogram1D("electron1 track time - cluster time after match", 100, -100., 0.).fill(track1_time - clusterTime);
                             aida.histogram2D("track delta time vs track1-cluster delta time", 100, -100., 0., 100, -100., 100.).fill(track1_time - clusterTime, track1_time - track2_time);
                             aida.histogram2D("track delta time vs track sum pY", 50, -10., 10, 50, -0.1, 0.1).fill(track1_time - track2_time, electron1.getMomentum().y() + rp2.getMomentum().y());
                             // cut on sumPY and track delta time...
-                            if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < 0.04) {
-                                if (track2_momentum > 1.6 && track2_momentum < 3.2) {
-                                    aida.histogram1D("track delta time after sumPy and track2 momentum cuts", 100, -100., 100.).fill(track1_time - track2_time);
+                            if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < _maxMomentumYSum) {
+                                if (track2_momentum > _track2MinimumMomentum && track2_momentum < _track2MaximumMomentum) {
+                                    aida.histogram1D("track delta time after sumPy and track2 momentum cuts", 120, -60., 60.).fill(track1_time - track2_time);
                                     // signal should be in-time
-                                    if (abs(track1_time - track2_time) < 4.0) {
+                                    if (abs(track1_time - track2_time) < _maxDeltaTrackTime) {
                                         aida.histogram1D("electron1 track momentum final", 100, 0., 5.0).fill(track1_momentum);
                                         aida.histogram1D("electron2 track momentum final", 100, 0., 5.0).fill(track2_momentum);
                                         aida.histogram2D("electron1 track momentum vs electron2 track momentum final", 100, 0., 5.0, 100, 0., 5.0).fill(track1_momentum, track2_momentum);
                                         aida.histogram1D("psum final", 100, 0., 7.).fill(psum);
                                         aida.histogram1D("psumCorr final", 100, 0., 7.).fill(psumCorr);
-                                        aida.histogram1D("track delta time final", 100, -100., 100.).fill(track1_time - track2_time);
+                                        aida.histogram1D("track delta time final", 120, -60., 60.).fill(track1_time - track2_time);
                                         aida.histogram1D("track delta time final finescale", 50, -10., 10.).fill(track1_time - track2_time);
                                         aida.histogram1D("track sum pY final", 50, -0.1, 0.1).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
                                         aida.histogram1D("track sum pX final", 50, 0.0, 0.2).fill(electron1.getMomentum().x() + rp2.getMomentum().x());
@@ -201,8 +211,8 @@ public class MollerAnalysis2021 extends Driver {
                                 }
                             }
                             //let's now look at out-of-time tracks keeping all the other cuts the same
-                            if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < 0.04 && (track1_time - track2_time) < -10.0) {
-                                if (track2_momentum > 1.6 && track2_momentum < 3.2) {
+                            if (abs(electron1.getMomentum().y() + rp2.getMomentum().y()) < _maxMomentumYSum && (track1_time - track2_time) < -10.0) {
+                                if (track2_momentum > _track2MinimumMomentum && track2_momentum < _track2MaximumMomentum) {
                                     aida.tree().mkdirs("out of time track2");
                                     aida.tree().cd("out of time track2");
                                     aida.histogram1D("electron1 track momentum final", 100, 0., 5.0).fill(track1_momentum);
@@ -342,5 +352,25 @@ public class MollerAnalysis2021 extends Driver {
             }
         }
         return trackToData;
+    }
+
+    public void setMaxDeltaTrackTime(double d) {
+        _maxDeltaTrackTime = d;
+    }
+
+    public void setTrack2MinimumMomentum(double d) {
+        _track2MinimumMomentum = d;
+    }
+
+    public void setTrack2MaximumMomentum(double d) {
+        _track2MaximumMomentum = d;
+    }
+
+    private void setTrack1MinimumNumberOfHits(int i) {
+        _track1MinimumNumberOfHits = i;
+    }
+
+    private void setTrack2MinimumNumberOfHits(int i) {
+        _track2MinimumNumberOfHits = i;
     }
 }

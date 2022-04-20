@@ -80,7 +80,6 @@ public class FeeAnalysis2019 extends Driver {
                 _isFeeCandidate = false;
                 skipEvent = true;
             } else {
-                _numberOfEventsSelected++;
                 aida.histogram2D("Selected clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
             }
         }
