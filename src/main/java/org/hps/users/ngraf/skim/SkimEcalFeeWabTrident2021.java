@@ -32,6 +32,9 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
     private AIDA aida = AIDA.defaultInstance();
     double _esumCut = 2.0;
     private int _numberOfEventsSelected;
+    private int _numberOfFeesSelected;
+    private int _numberOfWabsSelected;
+    private int _numberOfTridentsSelected;
     private int _numberOfEventsProcessed = 0;
 
     private int _maxNClusters = 3;
@@ -76,8 +79,16 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
         if (_skimTrident) {
             isTridentCandidate = isTridentCandidate(ecalClusters);
         }
-        //TODO implement calorimeter-only trident selection
-        if (isWabCandidate || isFeeCandidate || isTridentCandidate) {
+        if (isFeeCandidate) {
+            _numberOfFeesSelected++;
+            skipEvent = false;
+        }
+        if (isWabCandidate) {
+            _numberOfWabsSelected++;
+            skipEvent = false;
+        }
+        if (isTridentCandidate) {
+            _numberOfTridentsSelected++;
             skipEvent = false;
         }
         if (skipEvent) {
@@ -324,23 +335,23 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
             }
         }
         // Found a track associated with the FEE cluster
-        if (FeeTrack != null) {
-            RelationalTable trackToData = getKFTrackDataRelations(event);
-            double feeTrackTime = ((GenericObject) trackToData.from(FeeTrack)).getFloatVal(0);
-            aida.histogram1D("FEE Track time", 100, -30., 30.).fill(feeTrackTime);
-            // get all the tracks in the event, and plot delta time
-            if (FeeTrack.getTrackerHits().size() > 10) {
-                List<Track> tracks = event.get(Track.class, "KalmanFullTracks");
-                for (Track t : tracks) {
-                    if (t != FeeTrack) {
-                        double trackTime = ((GenericObject) trackToData.from(t)).getFloatVal(0);
-                        int nHits = t.getTrackerHits().size();
-                        aida.histogram1D("FEE Track time - track time", 100, -100., 100.).fill(feeTrackTime - trackTime);
-                        aida.histogram1D("FEE Track time - track time " + nHits, 100, -100., 100.).fill(feeTrackTime - trackTime);
-                    }
-                }
-            }
-        }
+//        if (FeeTrack != null) {
+//            RelationalTable trackToData = getKFTrackDataRelations(event);
+//            double feeTrackTime = ((GenericObject) trackToData.from(FeeTrack)).getFloatVal(0);
+//            aida.histogram1D("FEE Track time", 100, -30., 30.).fill(feeTrackTime);
+//            // get all the tracks in the event, and plot delta time
+//            if (FeeTrack.getTrackerHits().size() > 10) {
+//                List<Track> tracks = event.get(Track.class, "KalmanFullTracks");
+//                for (Track t : tracks) {
+//                    if (t != FeeTrack) {
+//                        double trackTime = ((GenericObject) trackToData.from(t)).getFloatVal(0);
+//                        int nHits = t.getTrackerHits().size();
+//                        aida.histogram1D("FEE Track time - track time", 100, -100., 100.).fill(feeTrackTime - trackTime);
+//                        aida.histogram1D("FEE Track time - track time " + nHits, 100, -100., 100.).fill(feeTrackTime - trackTime);
+//                    }
+//                }
+//            }
+//        }
     }
 
     public RelationalTable getKFTrackDataRelations(EventHeader event) {
@@ -362,6 +373,10 @@ public class SkimEcalFeeWabTrident2021 extends Driver {
     @Override
     protected void endOfData() {
         System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
+        System.out.println("Selected " + _numberOfFeesSelected + " FEEs");
+        System.out.println("Selected " + _numberOfWabsSelected + " WABs");
+        System.out.println("Selected " + _numberOfTridentsSelected + " Tridents");
+
     }
 
     public void setMinClusterEnergy(double d) {
