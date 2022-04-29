@@ -31,7 +31,7 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
     private int _numberOfEventsSelected;
     private int _numberOfEventsProcessed = 0;
     private boolean _skipEvent = true;
-    private boolean _skimEvents = false;
+    private boolean _skimEvents = true;
 //    private double pScale = 1.761 / 2.09;
     private double fee_cut = 2.8;
     private double _maxDeltaTrackTime = 10.;
