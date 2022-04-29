@@ -21,8 +21,11 @@ import org.lcsim.util.aida.AIDA;
 public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
-    double _esumCut = 1.5;//2.0;
+    double _esumCut = 1.25;//2.0;
     private int _numberOfEventsSelected;
+    private int _numberOfFeesSelected;
+    private int _numberOfWabsSelected;
+    private int _numberOfTridentsSelected;
     private int _numberOfEventsProcessed = 0;
 
     private int _maxNClusters = 3;
@@ -56,8 +59,16 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
         if (_skimTrident) {
             isTridentCandidate = isTridentCandidate(ecalClusters);
         }
-        //TODO implement calorimeter-only trident selection
-        if (isWabCandidate || isFeeCandidate || isTridentCandidate) {
+        if (isFeeCandidate) {
+            _numberOfFeesSelected++;
+            skipEvent = false;
+        }
+        if (isWabCandidate) {
+            _numberOfWabsSelected++;
+            skipEvent = false;
+        }
+        if (isTridentCandidate) {
+            _numberOfTridentsSelected++;
             skipEvent = false;
         }
         if (skipEvent) {
@@ -282,6 +293,9 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
     @Override
     protected void endOfData() {
         System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
+        System.out.println("Selected " + _numberOfFeesSelected + " FEEs");
+        System.out.println("Selected " + _numberOfWabsSelected + " WABs");
+        System.out.println("Selected " + _numberOfTridentsSelected + " Tridents");
     }
 
     public void setMinClusterEnergy(double d) {
