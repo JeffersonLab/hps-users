@@ -32,9 +32,9 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
     private int _numberOfEventsProcessed = 0;
     private boolean _skipEvent = true;
     private boolean _skimEvents = false;
-    private double pScale = 1.761 / 2.09;
+//    private double pScale = 1.761 / 2.09;
     private double fee_cut = 2.8;
-    private double _maxDeltaTrackTime = 4.;
+    private double _maxDeltaTrackTime = 10.;
 
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
@@ -46,7 +46,7 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
         int run = event.getRunNumber();
         if (run > 14624 && run < 14685) {
             fee_cut = 1.5;
-            pScale = 0.853 / 1.13; //1.92 / 2.87;
+//            pScale = 0.853 / 1.13; //1.92 / 2.87;
         }
         _skipEvent = true;
         _numberOfEventsProcessed++;
@@ -64,14 +64,19 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
 //                //get rid of FEEs
 //                if (rp.getMomentum().magnitude() < 2.8) {
                 // require the track to have 12 or more hits...
+                aida.histogram1D("All electron momentum", 100, 0., 5.).fill(rp.getMomentum().magnitude());
                 if (rp.getTracks().get(0).getTrackerHits().size() >= 11) {
                     if (rp.getMomentum().y() > 0) {
                         if (rp.getMomentum().magnitude() < fee_cut) {
                             topElectrons.add(rp);
+                            aida.histogram1D("Candidate electron momentum", 100, 0., 5.).fill(rp.getMomentum().magnitude());
+                            aida.histogram1D("Candidate electron momentum top", 100, 0., 5.).fill(rp.getMomentum().magnitude());
                         }
                     } else {
-                        if (rp.getMomentum().magnitude() * pScale < fee_cut) {
+                        if (rp.getMomentum().magnitude() < fee_cut) {
                             bottomElectrons.add(rp);
+                            aida.histogram1D("Candidate electron momentum", 100, 0., 5.).fill(rp.getMomentum().magnitude());
+                            aida.histogram1D("Candidate electron momentum bottom", 100, 0., 5.).fill(rp.getMomentum().magnitude());
                         }
                     }
                 }
@@ -91,11 +96,11 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
 
             double pTop = topElectron.getMomentum().magnitude();
             double pBottom = bottomElectron.getMomentum().magnitude();
-            double pBottomCorr = pBottom * pScale;
+//            double pBottomCorr = pBottom * pScale;
             double psum = pTop + pBottom;
             double pdiff = pTop - pBottom;
-            double psumCorr = pTop + pBottomCorr;
-            double pdiffCorr = pTop - pBottomCorr;
+//            double psumCorr = pTop + pBottomCorr;
+//            double pdiffCorr = pTop - pBottomCorr;
 
             aida.histogram1D("track delta time", 100, -100., 100.).fill(deltaTrackTime);
             aida.histogram1D("top track number of hits on track", 20, -0.5, 19.5).fill(topTrack.getTrackerHits().size());
@@ -103,12 +108,12 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
             aida.histogram1D("top electron track momentum", 100, 0., 5.0).fill(pTop);
             aida.histogram1D("bottom electron track momentum", 100, 0., 5.0).fill(pBottom);
             aida.histogram2D("top momentum vs bottom momentum", 100, 0., 5.0, 100, 0., 5.0).fill(pTop, pBottom);
-            aida.histogram1D("bottom electron track momentum corr", 100, 0., 5.0).fill(pBottomCorr);
-            aida.histogram2D("top momentum vs bottom momentum corr", 100, 0., 5.0, 100, 0., 5.0).fill(pTop, pBottomCorr);
+//            aida.histogram1D("bottom electron track momentum corr", 100, 0., 5.0).fill(pBottomCorr);
+//            aida.histogram2D("top momentum vs bottom momentum corr", 100, 0., 5.0, 100, 0., 5.0).fill(pTop, pBottomCorr);
             aida.histogram1D("psum", 100, 0., 7.).fill(psum);
             aida.histogram1D("pdiff", 100, -3.0, 3.0).fill(pdiff);
-            aida.histogram1D("psumCorr", 100, 0., 7.).fill(psumCorr);
-            aida.histogram1D("pdiffCorr", 100, -3.0, 3.0).fill(pdiffCorr);
+//            aida.histogram1D("psumCorr", 100, 0., 7.).fill(psumCorr);
+//            aida.histogram1D("pdiffCorr", 100, -3.0, 3.0).fill(pdiffCorr);
 
             if (abs(deltaTrackTime) < _maxDeltaTrackTime) {
                 aida.tree().mkdirs("delta time cut");
@@ -120,12 +125,12 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
                 aida.histogram1D("top electron track momentum", 100, 0., 5.0).fill(pTop);
                 aida.histogram1D("bottom electron track momentum", 100, 0., 5.0).fill(pBottom);
                 aida.histogram2D("top momentum vs bottom momentum", 100, 0., 5.0, 100, 0., 5.0).fill(pTop, pBottom);
-                aida.histogram1D("bottom electron track momentum corr", 100, 0., 5.0).fill(pBottomCorr);
-                aida.histogram2D("top momentum vs bottom momentum corr", 100, 0., 5.0, 100, 0., 5.0).fill(pTop, pBottomCorr);
+//                aida.histogram1D("bottom electron track momentum corr", 100, 0., 5.0).fill(pBottomCorr);
+//                aida.histogram2D("top momentum vs bottom momentum corr", 100, 0., 5.0, 100, 0., 5.0).fill(pTop, pBottomCorr);
                 aida.histogram1D("psum", 100, 0., 7.).fill(psum);
                 aida.histogram1D("pdiff", 100, -3.0, 3.0).fill(pdiff);
-                aida.histogram1D("psumCorr", 100, 0., 7.).fill(psumCorr);
-                aida.histogram1D("pdiffCorr", 100, -3.0, 3.0).fill(pdiffCorr);
+//                aida.histogram1D("psumCorr", 100, 0., 7.).fill(psumCorr);
+//                aida.histogram1D("pdiffCorr", 100, -3.0, 3.0).fill(pdiffCorr);
                 _skipEvent = false;
                 boolean topHasCluster = !topElectron.getClusters().isEmpty();
                 boolean bottomHasCluster = !bottomElectron.getClusters().isEmpty();
@@ -133,28 +138,28 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
                     double trackTime = ((GenericObject) trackToData.from(topTrack)).getFloatVal(0);
                     double clusterTime = ClusterUtilities.findSeedHit(topElectron.getClusters().get(0)).getTime();
                     aida.histogram1D("top track-cluster deltaT", 100, -70., -20.).fill(trackTime - clusterTime);
-                    aida.histogram1D("psumCorr top track has cluster", 100, 0., 7.).fill(psumCorr);
+                    aida.histogram1D("psum top track has cluster", 100, 0., 7.).fill(psum);
                 }
                 if (bottomHasCluster) {
                     double trackTime = ((GenericObject) trackToData.from(bottomTrack)).getFloatVal(0);
                     double clusterTime = ClusterUtilities.findSeedHit(bottomElectron.getClusters().get(0)).getTime();
                     aida.histogram1D("bottom track-cluster deltaT", 100, -70., -20.).fill(trackTime - clusterTime);
-                    aida.histogram1D("psumCorr bottom track has cluster", 100, 0., 7.).fill(psumCorr);
+                    aida.histogram1D("psum bottom track has cluster", 100, 0., 7.).fill(psum);
                 }
                 if (topHasCluster && bottomHasCluster) {
-                    aida.histogram1D("psumCorr top and bottom tracks have cluster", 100, 0., 7.).fill(psumCorr);
+                    aida.histogram1D("psum top and bottom tracks have cluster", 100, 0., 7.).fill(psum);
                 }
                 if (topHasCluster || bottomHasCluster) {
-                    aida.histogram1D("psumCorr top or bottom track has cluster", 100, 0., 7.).fill(psumCorr);
+                    aida.histogram1D("psum top or bottom track has cluster", 100, 0., 7.).fill(psum);
                 }
                 if (!topHasCluster && !bottomHasCluster) {
-                    aida.histogram1D("psumCorr neither top nor bottom track has cluster", 100, 0., 7.).fill(psumCorr);
+                    aida.histogram1D("psum neither top nor bottom track has cluster", 100, 0., 7.).fill(psum);
                 }
                 double invMass = analyzeTwoElectrons(topElectron, bottomElectron);
-                aida.histogram2D("psumCorr vs invariant mass", 100, 0., 3., 100, 0.0, 0.1).fill(psumCorr, invMass);
+                aida.histogram2D("psum vs invariant mass", 100, 0., 3., 100, 0.0, 0.1).fill(psum, invMass);
                 aida.tree().cd("..");
             } else {
-                aida.histogram1D("psumCorr out of time", 100, 0., 7.).fill(psumCorr);
+                aida.histogram1D("psum out of time", 100, 0., 7.).fill(psum);
             }
         }
         aida.tree().cd("..");
@@ -194,10 +199,10 @@ public class MollerTrackOnlyAnalysis2021 extends Driver {
         double emass2 = emass * emass;
         double[] p1 = ele1.getMomentum().v();
         double[] p2 = ele2.getMomentum().v();
-        // apply ad hoc correction to bottom momentum
-        for (int i = 0; i < 2; ++i) {
-            p2[i] *= p2[i] * pScale;
-        }
+//        // apply ad hoc correction to bottom momentum
+//        for (int i = 0; i < 2; ++i) {
+//            p2[i] *= p2[i] * pScale;
+//        }
         double e1 = 0;
         double e2 = 0.;
         for (int i = 0; i < 3; ++i) {
