@@ -254,6 +254,8 @@ public class FeeAnalysis2021Workshop2022 extends Driver {
                     analyzeHitsInFit(rp);
                 }
                 aida.histogram1D("EoverP" + topOrBottom, 100, 0., 2.).fill(e / p);
+                aida.histogram2D("EoverP vs cluster x " + topOrBottom, 100, -270.0, 370.0, 50, 0., 2.0).fill(c.getPosition()[0], e / p);
+                            
                 aida.histogram1D("EoverP" + topOrBottom+ " " + nHits + " hits", 100, 0., 2.).fill(e / p);
                 aida.histogram2D("E vs p" + topOrBottom, 100, 0., 5., 100, 0., 5.).fill(e, p);
                 if (_analyzeMomentumByCalorimeterCell) {
