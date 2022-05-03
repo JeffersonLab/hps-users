@@ -47,7 +47,12 @@ public class EoverPCalibrationDriver extends Driver {
                         int nHits = rp.getTracks().get(0).getTrackerHits().size();
                         String topOrBottom = rp.getMomentum().y() > 0 ? " top " : " bottom ";
                         aida.histogram1D(type + " " + topOrBottom + " nHits", 15, -0.5, 14.5).fill(nHits);
-                        if (nHits > 13) {
+                        int minNhits = 13;
+                        // bottom layer 5 on the electron side is dead, so only require 13 hits there...
+                        if (ix < 0 && iy < 0) {
+                            minNhits = 12;
+                        }
+                        if (nHits > minNhits) {
                             aida.histogram2D("cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
                             aida.histogram2D("cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
                             aida.histogram2D(type + "cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
