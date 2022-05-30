@@ -4,6 +4,7 @@ import hep.physics.vec.BasicHep3Matrix;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
 import hep.physics.vec.VecOp;
+import static java.lang.Math.PI;
 import static java.lang.Math.abs;
 import static java.lang.Math.acos;
 import static java.lang.Math.atan2;
@@ -49,6 +50,7 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
     private int _numberOfEventsSelected;
     private int _numberOfEventsProcessed = 0;
     boolean _skipEvent = true;
+    boolean _requireTightNhitsCut = true;
 
     // event quantities
     private double _beamEnergy = 3.742;
@@ -239,8 +241,8 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
 
                                         aida.histogram1D("track delta time final", 120, -60., 60.).fill(track1_time - track2_time);
                                         aida.histogram1D("track delta time final finescale", 50, -10., 10.).fill(track1_time - track2_time);
-                                        aida.histogram1D("track sum pY final", 100, -0.1, 0.1).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
-                                        aida.histogram1D("track sum pX final", 100, 0.0, 0.2).fill(electron1.getMomentum().x() + rp2.getMomentum().x());
+                                        aida.histogram1D("track sum pY final", 100, -0.1, 0.05).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
+                                        aida.histogram1D("track sum pX final", 100, 0.0, 0.1).fill(electron1.getMomentum().x() + rp2.getMomentum().x());
                                         aida.histogram1D("track1 chisq per ndf", 100, 0., 30.).fill(track1.getChi2() / track1.getNDF());
                                         aida.histogram1D("track2 chisq per ndf", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
                                         aida.histogram1D("pdiff", 100, -1.0, 1.0).fill(track1_momentum - track2_momentum);
@@ -271,12 +273,12 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                                             aida.histogram1D("electron1 track momentum final", 100, 0., 5.0).fill(track1_momentum);
                                             aida.histogram1D("electron2 track momentum final", 100, 0., 5.0).fill(track2_momentum);
                                             aida.histogram2D("electron1 track momentum vs electron2 track momentum final", 100, 0., 5.0, 100, 0., 5.0).fill(track1_momentum, track2_momentum);
-                                            aida.histogram1D("psum final", 100, 0., 7.).fill(psum);
+                                            aida.histogram1D("psum final", 100, 0., 5.).fill(psum);
 
                                             aida.histogram1D("track delta time final", 120, -60., 60.).fill(track1_time - track2_time);
                                             aida.histogram1D("track delta time final finescale", 50, -10., 10.).fill(track1_time - track2_time);
-                                            aida.histogram1D("track sum pY final", 50, -0.1, 0.1).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
-                                            aida.histogram1D("track sum pX final", 50, 0.0, 0.2).fill(electron1.getMomentum().x() + rp2.getMomentum().x());
+                                            aida.histogram1D("track sum pY final", 100, -0.05, 0.05).fill(electron1.getMomentum().y() + rp2.getMomentum().y());
+                                            aida.histogram1D("track sum pX final", 100, 0.0, 0.1).fill(electron1.getMomentum().x() + rp2.getMomentum().x());
                                             aida.histogram1D("track1 chisq per ndf", 100, 0., 30.).fill(track1.getChi2() / track1.getNDF());
                                             aida.histogram1D("track2 chisq per ndf", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
                                             aida.histogram1D("pdiff", 100, -1.0, 1.0).fill(track1_momentum - track2_momentum);
@@ -290,6 +292,9 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                                             aida.tree().cd("..");
                                         }
                                         _skipEvent = false;
+                                        if (!passesTightNhitsCut && _requireTightNhitsCut) {
+                                            _skipEvent = true;
+                                        }
                                     }
                                 }
                             }
@@ -441,7 +446,18 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
         double mollerTrackTheta2 = acos(1 - 0.511e-3 * (1 / p2 - 1 / _beamEnergy));
 
         double phi1 = atan2(p1rot.x(), p1rot.y());
-        double phi2 = atan2(p2rot.x(), -p2rot.y()); //TODO figure out why the -ive sign is needed
+        double phi2 = atan2(p2rot.x(), p2rot.y()); 
+//        aida.cloud2D("p1rot x vs y").fill(p1rot.x(), p1rot.y());
+//        aida.cloud2D("p2rot x vs y").fill(p2rot.x(), p2rot.y());
+        aida.histogram1D("phi1", 100, -PI, PI).fill(phi1);
+        aida.histogram1D("phi2", 100, -PI, PI).fill(phi2);
+        if (isTopTrack(rp1)) {
+            aida.histogram1D("phi top", 100, -PI, PI).fill(phi1);
+            aida.histogram1D("phi bottom", 100, -PI, PI).fill(phi2);
+        } else {
+            aida.histogram1D("phi bottom", 100, -PI, PI).fill(phi1);
+            aida.histogram1D("phi top", 100, -PI, PI).fill(phi2);
+        }
         // step in momentum
         for (int i = 0; i < nSteps; ++i) {
             double pBin = pMin + i * dP;
@@ -457,16 +473,16 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                     //aida.histogram2D(binLabel + "Top Track thetaX vs ThetaY " + t1Nhits + " hits", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta1x, theta1y);
                     aida.histogram2D(binLabel + " Track thetaX vs thetaY ", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta1x, theta1y);
                     aida.histogram1D(binLabel + " Top Track theta ", 100, 0.015, thetaMax).fill(theta1);
-                    aida.histogram2D(binLabel + " Top Track phi vs dTheta", 100, -1., 1., 100, -0.01, 0.01).fill(phi1, dTheta);
-                    aida.profile1D(binLabel + " Top Track phi vs dTheta Profile", 100, -1., 1.).fill(phi1, dTheta);
+                    aida.histogram2D(binLabel + " Top Track phi vs dTheta", 100, -PI, PI, 100, -0.01, 0.01).fill(phi1, dTheta);
+                    aida.profile1D(binLabel + " Top Track phi vs dTheta Profile", 100, -PI, PI).fill(phi1, dTheta);
 
                 } else {
                     aida.histogram1D("Bottom Track Momentum", 100, 0.25, 1.75).fill(p1);
                     //aida.histogram2D(binLabel + "Bottom Track thetaX vs ThetaY " + t1Nhits + " hits", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta1x, theta1y);
                     aida.histogram2D(binLabel + " Track thetaX vs thetaY ", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta1x, theta1y);
                     aida.histogram1D(binLabel + " Bottom Track theta ", 100, 0.015, thetaMax).fill(theta1);
-                    aida.histogram2D(binLabel + " Bottom Track phi vs dTheta", 100, -1., 1., 100, -0.01, 0.01).fill(phi1, dTheta);
-                    aida.profile1D(binLabel + " Bottom Track phi vs dTheta Profile", 100, -1., 1.).fill(phi1, dTheta);
+                    aida.histogram2D(binLabel + " Bottom Track phi vs dTheta", 100, -PI, PI, 100, -0.01, 0.01).fill(phi1, dTheta);
+                    aida.profile1D(binLabel + " Bottom Track phi vs dTheta Profile", 100, -PI, PI).fill(phi1, dTheta);
 
                 }
             }
@@ -477,16 +493,16 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                     //aida.histogram2D(binLabel + "Top Track thetaX vs ThetaY " + t2Nhits + " hits", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta2x, theta2y);
                     aida.histogram2D(binLabel + " Track thetaX vs thetaY ", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta2x, theta2y);
                     aida.histogram1D(binLabel + " Top Track theta ", 100, 0.015, thetaMax).fill(theta2);
-                    aida.histogram2D(binLabel + " Top Track phi vs dTheta", 100, -1., 1., 100, -0.01, 0.01).fill(phi2, dTheta);
-                    aida.profile1D(binLabel + " Top Track phi vs dTheta Profile", 100, -1., 1.).fill(phi2, dTheta);
+                    aida.histogram2D(binLabel + " Top Track phi vs dTheta", 100, -PI, PI, 100, -0.01, 0.01).fill(phi2, dTheta);
+                    aida.profile1D(binLabel + " Top Track phi vs dTheta Profile", 100, -PI, PI).fill(phi2, dTheta);
 
                 } else {
                     aida.histogram1D("Bottom Track Momentum", 100, 0.25, 1.75).fill(p2);
                     //aida.histogram2D(binLabel + "Bottom Track thetaX vs ThetaY " + t2Nhits + " hits", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta2x, theta2y);
-                    aida.histogram2D(binLabel + " Track thetaX vs hetaY ", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta2x, theta2y);
+                    aida.histogram2D(binLabel + " Track thetaX vs thetaY ", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta2x, theta2y);
                     aida.histogram1D(binLabel + " Bottom Track theta ", 100, 0.015, thetaMax).fill(theta2);
-                    aida.histogram2D(binLabel + " Bottom Track phi vs dTheta", 100, -1., 1., 100, -0.01, 0.01).fill(phi2, dTheta);
-                    aida.profile1D(binLabel + " Bottom Track phi vs dTheta Profile", 100, -1., 1.).fill(phi2, dTheta);
+                    aida.histogram2D(binLabel + " Bottom Track phi vs dTheta", 100, -PI, PI, 100, -0.01, 0.01).fill(phi2, dTheta);
+                    aida.profile1D(binLabel + " Bottom Track phi vs dTheta Profile", 100, -PI, PI).fill(phi2, dTheta);
                 }
             }
         }
@@ -568,11 +584,15 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
         _track2MaximumMomentum = d;
     }
 
-    private void setTrack1MinimumNumberOfHits(int i) {
+    public void setTrack1MinimumNumberOfHits(int i) {
         _track1MinimumNumberOfHits = i;
     }
 
-    private void setTrack2MinimumNumberOfHits(int i) {
+    public void setTrack2MinimumNumberOfHits(int i) {
         _track2MinimumNumberOfHits = i;
+    }
+
+    public void setRequireTightNhitsCut(boolean b) {
+        _requireTightNhitsCut = b;
     }
 }
