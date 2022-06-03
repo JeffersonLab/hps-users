@@ -4,7 +4,6 @@ import hep.physics.vec.BasicHep3Matrix;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
 import hep.physics.vec.VecOp;
-import static java.lang.Math.PI;
 import static java.lang.Math.abs;
 import static java.lang.Math.acos;
 import static java.lang.Math.atan2;
@@ -42,8 +41,8 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
     private AIDA aida = AIDA.defaultInstance();
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
 
-    private boolean _analyzeMollerCollections = false;
-    private String[] mollerCollectionNames = {"UnconstrainedMollerVertices"};
+    private boolean _analyzeMollerCollections = true;
+    private String[] mollerCollectionNames = {"UnconstrainedMollerVertices", "UnconstrainedMollerVertices_KF"};
 
     String[] ReconstructedParticleCollectionNames = {"FinalStateParticles_KF"};
 
@@ -329,70 +328,72 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
         // analysis of Moller collections
         if (_analyzeMollerCollections) {
             for (String mollerCollectionName : mollerCollectionNames) {
-                aida.tree().mkdirs("Moller analysis " + mollerCollectionName);
-                aida.tree().cd("Moller analysis " + mollerCollectionName);
-                List<Vertex> vertices = event.get(Vertex.class, mollerCollectionName);
-                for (Vertex v : vertices) {
-                    ReconstructedParticle rp = v.getAssociatedParticle();
+                if (event.hasCollection(Vertex.class, mollerCollectionName)) {
+                    aida.tree().mkdirs("Moller analysis " + mollerCollectionName);
+                    aida.tree().cd("Moller analysis " + mollerCollectionName);
+                    List<Vertex> vertices = event.get(Vertex.class, mollerCollectionName);
+                    for (Vertex v : vertices) {
+                        ReconstructedParticle rp = v.getAssociatedParticle();
 
-                    List<ReconstructedParticle> parts = rp.getParticles();
-                    ReconstructedParticle rp1 = parts.get(0);
-                    ReconstructedParticle rp2 = parts.get(1);
-                    double p1 = rp1.getMomentum().magnitude();
-                    double p2 = rp2.getMomentum().magnitude();
-                    int nclusters = 0;
-                    Cluster c1 = null;
-                    Cluster c2 = null;
-                    if (!rp1.getClusters().isEmpty()) {
-                        nclusters++;
-                        c1 = rp1.getClusters().get(0);
-                        CalorimeterHit seed = c1.getCalorimeterHits().get(0);
-                        int ix = seed.getIdentifierFieldValue("ix");
-                        int iy = seed.getIdentifierFieldValue("iy");
-                        double energy = c1.getEnergy();
-                        aida.histogram2D("cluster 1 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-                        aida.histogram1D("cluster 1 energy", 100, 0., 3.0).fill(energy);
+                        List<ReconstructedParticle> parts = rp.getParticles();
+                        ReconstructedParticle rp1 = parts.get(0);
+                        ReconstructedParticle rp2 = parts.get(1);
+                        double p1 = rp1.getMomentum().magnitude();
+                        double p2 = rp2.getMomentum().magnitude();
+                        int nclusters = 0;
+                        Cluster c1 = null;
+                        Cluster c2 = null;
+                        if (!rp1.getClusters().isEmpty()) {
+                            nclusters++;
+                            c1 = rp1.getClusters().get(0);
+                            CalorimeterHit seed = c1.getCalorimeterHits().get(0);
+                            int ix = seed.getIdentifierFieldValue("ix");
+                            int iy = seed.getIdentifierFieldValue("iy");
+                            double energy = c1.getEnergy();
+                            aida.histogram2D("cluster 1 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                            aida.histogram1D("cluster 1 energy", 100, 0., 3.0).fill(energy);
+                        }
+                        if (!rp2.getClusters().isEmpty()) {
+                            nclusters++;
+                            c2 = rp2.getClusters().get(0);
+                            CalorimeterHit seed = c2.getCalorimeterHits().get(0);
+                            int ix = seed.getIdentifierFieldValue("ix");
+                            int iy = seed.getIdentifierFieldValue("iy");
+                            double energy = c2.getEnergy();
+                            aida.histogram2D("cluster 2 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                            aida.histogram1D("cluster 2 energy", 100, 0., 3.0).fill(energy);
+                        }
+
+                        Hep3Vector vtx = v.getPosition();
+                        aida.histogram1D("vertex x", 100, -2.0, 2.0).fill(vtx.x());
+                        aida.histogram1D("vertex y", 100, -0.4, 0.4).fill(vtx.y());
+                        aida.histogram2D("vertex x vs y", 100, -2.0, 2.0, 100, -0.4, 0.4).fill(vtx.x(), vtx.y());
+                        aida.histogram1D("vertex z", 100, -20., 20.).fill(vtx.z());
+
+                        //rotate into physics frame of reference
+                        Hep3Vector rprot = VecOp.mult(beamAxisRotation, rp.getMomentum());
+
+                        Hep3Vector p1rot = VecOp.mult(beamAxisRotation, rp1.getMomentum());
+                        Hep3Vector p2rot = VecOp.mult(beamAxisRotation, rp2.getMomentum());
+                        double theta1 = Math.acos(p1rot.z() / p1rot.magnitude());
+                        double theta2 = Math.acos(p2rot.z() / p2rot.magnitude());
+                        double thetasum = theta1 + theta2;
+
+                        aida.histogram1D("invariant mass", 100, 0.02, 0.1).fill(rp.getMass());
+                        aida.histogram1D("px", 100, -0.1, 0.1).fill(rprot.x());
+                        aida.histogram1D("py", 100, -0.05, 0.05).fill(rprot.y());
+                        aida.histogram1D("pz", 100, 2.5, 5.0).fill(rprot.z());
+                        aida.histogram1D("p", 100, 2.5, 5.0).fill(rprot.magnitude());
+                        aida.histogram1D("number of clusters", 3, -0.5, 2.5).fill(nclusters);
+
+                        aida.histogram1D("theta sum", 100, 0.02, 0.06).fill(thetasum);
+                        aida.histogram2D("p1 vs theta1", 100, 1.2, 3., 100, 0.012, 0.024).fill(p1, theta1);
+                        aida.histogram2D("p2 vs theta2", 100, 1.2, 3., 100, 0.012, 0.024).fill(p2, theta2);
+                        aida.histogram2D("p1 vs p2", 100, 1.2, 3., 100, 1.2, 3.).fill(p1, p2);
+                        aida.histogram2D("theta1 vs theta2", 100, 0.012, 0.024, 100, 0.012, 0.024).fill(theta1, theta2);
                     }
-                    if (!rp2.getClusters().isEmpty()) {
-                        nclusters++;
-                        c2 = rp2.getClusters().get(0);
-                        CalorimeterHit seed = c2.getCalorimeterHits().get(0);
-                        int ix = seed.getIdentifierFieldValue("ix");
-                        int iy = seed.getIdentifierFieldValue("iy");
-                        double energy = c2.getEnergy();
-                        aida.histogram2D("cluster 2 ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-                        aida.histogram1D("cluster 2 energy", 100, 0., 3.0).fill(energy);
-                    }
-
-                    Hep3Vector vtx = v.getPosition();
-                    aida.histogram1D("vertex x", 100, -2.0, 2.0).fill(vtx.x());
-                    aida.histogram1D("vertex y", 100, -0.4, 0.4).fill(vtx.y());
-                    aida.histogram2D("vertex x vs y", 100, -2.0, 2.0, 100, -0.4, 0.4).fill(vtx.x(), vtx.y());
-                    aida.histogram1D("vertex z", 100, -20., 20.).fill(vtx.z());
-
-                    //rotate into physics frame of reference
-                    Hep3Vector rprot = VecOp.mult(beamAxisRotation, rp.getMomentum());
-
-                    Hep3Vector p1rot = VecOp.mult(beamAxisRotation, rp1.getMomentum());
-                    Hep3Vector p2rot = VecOp.mult(beamAxisRotation, rp2.getMomentum());
-                    double theta1 = Math.acos(p1rot.z() / p1rot.magnitude());
-                    double theta2 = Math.acos(p2rot.z() / p2rot.magnitude());
-                    double thetasum = theta1 + theta2;
-
-                    aida.histogram1D("invariant mass", 100, 0.02, 0.1).fill(rp.getMass());
-                    aida.histogram1D("px", 100, -0.1, 0.1).fill(rprot.x());
-                    aida.histogram1D("py", 100, -0.05, 0.05).fill(rprot.y());
-                    aida.histogram1D("pz", 100, 2.5, 5.0).fill(rprot.z());
-                    aida.histogram1D("p", 100, 2.5, 5.0).fill(rprot.magnitude());
-                    aida.histogram1D("number of clusters", 3, -0.5, 2.5).fill(nclusters);
-
-                    aida.histogram1D("theta sum", 100, 0.02, 0.06).fill(thetasum);
-                    aida.histogram2D("p1 vs theta1", 100, 1.2, 3., 100, 0.012, 0.024).fill(p1, theta1);
-                    aida.histogram2D("p2 vs theta2", 100, 1.2, 3., 100, 0.012, 0.024).fill(p2, theta2);
-                    aida.histogram2D("p1 vs p2", 100, 1.2, 3., 100, 1.2, 3.).fill(p1, p2);
-                    aida.histogram2D("theta1 vs theta2", 100, 0.012, 0.024, 100, 0.012, 0.024).fill(theta1, theta2);
+                    aida.tree().cd("..");
                 }
-                aida.tree().cd("..");
             }
         }
         if (_skipEvent) {
@@ -445,18 +446,25 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
         double mollerTrackTheta1 = acos(1 - 0.511e-3 * (1 / p1 - 1 / _beamEnergy));
         double mollerTrackTheta2 = acos(1 - 0.511e-3 * (1 / p2 - 1 / _beamEnergy));
 
-        double phi1 = atan2(p1rot.x(), p1rot.y());
-        double phi2 = atan2(p2rot.x(), p2rot.y()); 
+        double phi1;
+        double phi2;
+        if (isTopTrack(rp1)) {
+            phi1 = atan2(p1rot.x(), p1rot.y());
+            phi2 = atan2(p2rot.x(), -p2rot.y());
+        } else {
+            phi1 = atan2(p1rot.x(), -p1rot.y());
+            phi2 = atan2(p2rot.x(), p2rot.y());
+        }
 //        aida.cloud2D("p1rot x vs y").fill(p1rot.x(), p1rot.y());
 //        aida.cloud2D("p2rot x vs y").fill(p2rot.x(), p2rot.y());
-        aida.histogram1D("phi1", 100, -PI, PI).fill(phi1);
-        aida.histogram1D("phi2", 100, -PI, PI).fill(phi2);
+        aida.histogram1D("phi1", 100, -1.5, 1.5).fill(phi1);
+        aida.histogram1D("phi2", 100, -1.5, 1.5).fill(phi2);
         if (isTopTrack(rp1)) {
-            aida.histogram1D("phi top", 100, -PI, PI).fill(phi1);
-            aida.histogram1D("phi bottom", 100, -PI, PI).fill(phi2);
+            aida.histogram1D("phi top", 100, -1.5, 1.5).fill(phi1);
+            aida.histogram1D("phi bottom", 100, -1.5, 1.5).fill(phi2);
         } else {
-            aida.histogram1D("phi bottom", 100, -PI, PI).fill(phi1);
-            aida.histogram1D("phi top", 100, -PI, PI).fill(phi2);
+            aida.histogram1D("phi bottom", 100, -1.5, 1.5).fill(phi1);
+            aida.histogram1D("phi top", 100, -1.5, 1.5).fill(phi2);
         }
         // step in momentum
         for (int i = 0; i < nSteps; ++i) {
@@ -473,16 +481,16 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                     //aida.histogram2D(binLabel + "Top Track thetaX vs ThetaY " + t1Nhits + " hits", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta1x, theta1y);
                     aida.histogram2D(binLabel + " Track thetaX vs thetaY ", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta1x, theta1y);
                     aida.histogram1D(binLabel + " Top Track theta ", 100, 0.015, thetaMax).fill(theta1);
-                    aida.histogram2D(binLabel + " Top Track phi vs dTheta", 100, -PI, PI, 100, -0.01, 0.01).fill(phi1, dTheta);
-                    aida.profile1D(binLabel + " Top Track phi vs dTheta Profile", 100, -PI, PI).fill(phi1, dTheta);
+                    aida.histogram2D(binLabel + " Top Track phi vs dTheta", 100, -1.5, 1.5, 100, -0.01, 0.01).fill(phi1, dTheta);
+                    aida.profile1D(binLabel + " Top Track phi vs dTheta Profile", 100, -1.5, 1.5).fill(phi1, dTheta);
 
                 } else {
                     aida.histogram1D("Bottom Track Momentum", 100, 0.25, 1.75).fill(p1);
                     //aida.histogram2D(binLabel + "Bottom Track thetaX vs ThetaY " + t1Nhits + " hits", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta1x, theta1y);
                     aida.histogram2D(binLabel + " Track thetaX vs thetaY ", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta1x, theta1y);
                     aida.histogram1D(binLabel + " Bottom Track theta ", 100, 0.015, thetaMax).fill(theta1);
-                    aida.histogram2D(binLabel + " Bottom Track phi vs dTheta", 100, -PI, PI, 100, -0.01, 0.01).fill(phi1, dTheta);
-                    aida.profile1D(binLabel + " Bottom Track phi vs dTheta Profile", 100, -PI, PI).fill(phi1, dTheta);
+                    aida.histogram2D(binLabel + " Bottom Track phi vs dTheta", 100, -1.5, 1.5, 100, -0.01, 0.01).fill(phi1, dTheta);
+                    aida.profile1D(binLabel + " Bottom Track phi vs dTheta Profile", 100, -1.5, 1.5).fill(phi1, dTheta);
 
                 }
             }
@@ -493,16 +501,16 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                     //aida.histogram2D(binLabel + "Top Track thetaX vs ThetaY " + t2Nhits + " hits", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta2x, theta2y);
                     aida.histogram2D(binLabel + " Track thetaX vs thetaY ", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta2x, theta2y);
                     aida.histogram1D(binLabel + " Top Track theta ", 100, 0.015, thetaMax).fill(theta2);
-                    aida.histogram2D(binLabel + " Top Track phi vs dTheta", 100, -PI, PI, 100, -0.01, 0.01).fill(phi2, dTheta);
-                    aida.profile1D(binLabel + " Top Track phi vs dTheta Profile", 100, -PI, PI).fill(phi2, dTheta);
+                    aida.histogram2D(binLabel + " Top Track phi vs dTheta", 100, -1.5, 1.5, 100, -0.01, 0.01).fill(phi2, dTheta);
+                    aida.profile1D(binLabel + " Top Track phi vs dTheta Profile", 100, -1.5, 1.5).fill(phi2, dTheta);
 
                 } else {
                     aida.histogram1D("Bottom Track Momentum", 100, 0.25, 1.75).fill(p2);
                     //aida.histogram2D(binLabel + "Bottom Track thetaX vs ThetaY " + t2Nhits + " hits", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta2x, theta2y);
                     aida.histogram2D(binLabel + " Track thetaX vs thetaY ", 100, -thetaMax, thetaMax, 100, -thetaMax, thetaMax).fill(theta2x, theta2y);
                     aida.histogram1D(binLabel + " Bottom Track theta ", 100, 0.015, thetaMax).fill(theta2);
-                    aida.histogram2D(binLabel + " Bottom Track phi vs dTheta", 100, -PI, PI, 100, -0.01, 0.01).fill(phi2, dTheta);
-                    aida.profile1D(binLabel + " Bottom Track phi vs dTheta Profile", 100, -PI, PI).fill(phi2, dTheta);
+                    aida.histogram2D(binLabel + " Bottom Track phi vs dTheta", 100, -1.5, 1.5, 100, -0.01, 0.01).fill(phi2, dTheta);
+                    aida.profile1D(binLabel + " Bottom Track phi vs dTheta Profile", 100, -1.5, 1.5).fill(phi2, dTheta);
                 }
             }
         }
