@@ -140,10 +140,15 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                 for (ReconstructedParticle rp : rpList) {
                     int pdgId = rp.getParticleIDUsed().getPDG();
                     if (pdgId == 11) {
+                        int nHits = rp.getTracks().get(0).getTrackerHits().size();
                         if (rp.getMomentum().y() < 0) {
                             aida.histogram1D("All electrons track momentum bottom", 100, 0., 5.0).fill(rp.getMomentum().magnitude());
+                            aida.histogram1D("All electrons track momentum bottom " + nHits + " hits", 100, 0., 5.0).fill(rp.getMomentum().magnitude());
+                            aida.histogram1D("All electrons nHits bottom", 20, -0.5, 19.5).fill(nHits);
                         } else {
                             aida.histogram1D("All electrons track momentum top", 100, 0., 5.0).fill(rp.getMomentum().magnitude());
+                            aida.histogram1D("All electrons track momentum top " + nHits + " hits", 100, 0., 5.0).fill(rp.getMomentum().magnitude());
+                            aida.histogram1D("All electrons nHits top", 20, -0.5, 19.5).fill(nHits);
                         }
                         // let's find the electron of interest that triggered...
                         if (!rp.getClusters().isEmpty()) {
