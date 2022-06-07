@@ -71,6 +71,10 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
     int nSteps = 15;
     double thetaMax = 0.04;
     double thetaMin = -0.04;
+    private int _ixMin = -13;
+    private int _ixMax = -10;
+    private int _iyMin = -1;
+    private int _iyMax = 1;
 
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
@@ -88,6 +92,10 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
             _track2MinimumMomentum = 0.5;
             _track1MaximumMomentum = 0.75 * _beamEnergy;
             _track2MaximumMomentum = 0.75 * _beamEnergy;
+            _ixMin = -20;
+            _ixMax = -7;
+            _iyMin = -3;
+            _iyMax = 3;
         }
         // simple cluster analysis
         aida.tree().mkdirs("Cluster analysis ");
@@ -112,7 +120,7 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
             int iy = seed.getIdentifierFieldValue("iy");
             double energy = cluster.getEnergy();
             aida.histogram2D("cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-            if (abs(iy) == 1 && ix > -15 && ix < -9) {
+            if (iy >= _iyMin && iy <= _iyMax && ix >= _ixMin && ix <=_ixMax) {
                 clus = cluster;
                 nFiducialClusters++;
                 aida.histogram1D("cluster energy Moller fiducial", 100, 0., 3.0).fill(energy);
