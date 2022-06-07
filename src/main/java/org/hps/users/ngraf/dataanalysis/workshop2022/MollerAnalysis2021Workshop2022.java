@@ -75,6 +75,7 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
     private int _ixMax = -10;
     private int _iyMin = -1;
     private int _iyMax = 1;
+    private double _clusterEnergyMin = 0.5;
 
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
@@ -89,13 +90,15 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
         _numberOfEventsProcessed++;
         if (event.getRunNumber() > 14623 && event.getRunNumber() < 14674) {
             _beamEnergy = 1.92;
-            _track2MinimumMomentum = 0.5;
+            _track2MinimumMomentum = 0.2;
             _track1MaximumMomentum = 0.75 * _beamEnergy;
             _track2MaximumMomentum = 0.75 * _beamEnergy;
             _ixMin = -20;
             _ixMax = -7;
             _iyMin = -3;
             _iyMax = 3;
+            _clusterEnergyMin = 0.3;
+
         }
         // simple cluster analysis
         aida.tree().mkdirs("Cluster analysis ");
@@ -120,7 +123,7 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
             int iy = seed.getIdentifierFieldValue("iy");
             double energy = cluster.getEnergy();
             aida.histogram2D("cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-            if (iy >= _iyMin && iy <= _iyMax && ix >= _ixMin && ix <=_ixMax) {
+            if (iy >= _iyMin && iy <= _iyMax && ix >= _ixMin && ix <= _ixMax) {
                 clus = cluster;
                 nFiducialClusters++;
                 aida.histogram1D("cluster energy Moller fiducial", 100, 0., 3.0).fill(energy);
@@ -130,7 +133,7 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
         aida.histogram1D("number of Moller Fiducial Clusters", 5, -0.5, 4.5).fill(nFiducialClusters);
         aida.tree().cd("..");
         // continue only with events with one fiducial cluster with energy > 0.8GeV
-        if (nFiducialClusters == 1 && clus.getEnergy() > 0.5) {
+        if (nFiducialClusters == 1 && clus.getEnergy() > _clusterEnergyMin) {
             // my own event analysis
             for (String rpCollectionName : ReconstructedParticleCollectionNames) {
 //                System.out.println("analyzing " + rpCollectionName);
@@ -259,8 +262,12 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                                         aida.histogram1D("track2 chisq per ndf", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
                                         aida.histogram1D("pdiff", 100, -1.0, 1.0).fill(track1_momentum - track2_momentum);
                                         if (isTop) {
+                                            aida.histogram1D("track1 chisq per ndf top", 100, 0., 30.).fill(track1.getChi2() / track1.getNDF());
+                                            aida.histogram1D("track2 chisq per ndf bottom", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
                                             analyzeTwoElectrons(electron1, rp2);
                                         } else {
+                                            aida.histogram1D("track1 chisq per ndf bottom", 100, 0., 30.).fill(track1.getChi2() / track1.getNDF());
+                                            aida.histogram1D("track2 chisq per ndf top", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
                                             analyzeTwoElectrons(rp2, electron1);
                                         }
                                         vertexTwoElectrons(electron1, rp2);
@@ -295,8 +302,12 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                                             aida.histogram1D("track2 chisq per ndf", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
                                             aida.histogram1D("pdiff", 100, -1.0, 1.0).fill(track1_momentum - track2_momentum);
                                             if (isTop) {
+                                                aida.histogram1D("track1 chisq per ndf top", 100, 0., 30.).fill(track1.getChi2() / track1.getNDF());
+                                                aida.histogram1D("track2 chisq per ndf bottom", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
                                                 analyzeTwoElectrons(electron1, rp2);
                                             } else {
+                                                aida.histogram1D("track1 chisq per ndf bottom", 100, 0., 30.).fill(track1.getChi2() / track1.getNDF());
+                                                aida.histogram1D("track2 chisq per ndf top", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
                                                 analyzeTwoElectrons(rp2, electron1);
                                             }
                                             vertexTwoElectrons(electron1, rp2);
