@@ -54,7 +54,7 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
     // event quantities
     private double _beamEnergy = 3.742;
     // track quantities
-    private double _maxDeltaTrackTime = 4.;
+    private double _maxDeltaTrackTime = 10.;
     private double _track2MinimumMomentum = 1.5;
     private double _track1MaximumMomentum = 2.5;
     private double _track2MaximumMomentum = 2.5;
@@ -125,14 +125,17 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
             aida.histogram2D("cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
             if (iy >= _iyMin && iy <= _iyMax && ix >= _ixMin && ix <= _ixMax) {
                 clus = cluster;
-                nFiducialClusters++;
-                aida.histogram1D("cluster energy Moller fiducial", 100, 0., 3.0).fill(energy);
-                aida.histogram2D("cluster ix vs iy Moller fiducial", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                if (clus.getEnergy() > _clusterEnergyMin) {
+                    nFiducialClusters++;
+                    aida.histogram1D("cluster energy Moller fiducial", 100, 0., 3.0).fill(energy);
+                    aida.histogram2D("cluster ix vs iy Moller fiducial", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                }
             }
         }
         aida.histogram1D("number of Moller Fiducial Clusters", 5, -0.5, 4.5).fill(nFiducialClusters);
         aida.tree().cd("..");
-        // continue only with events with one fiducial cluster with energy > 0.8GeV
+        // continue only with events with one fiducial cluster with energy > minimum energy
+        // TODO relax this cut to get events with both electrons matched to clusters.
         if (nFiducialClusters == 1 && clus.getEnergy() > _clusterEnergyMin) {
             // my own event analysis
             for (String rpCollectionName : ReconstructedParticleCollectionNames) {
@@ -184,7 +187,6 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                 }
                 // if we found a track associated to the cluster let's see if we can find another electron...
                 if (electron1 != null) {
-
                     double clusterEnergy = clus.getEnergy();
                     boolean isTop = clus.getPosition()[1] > 0 ? true : false;
                     double clusterTime = ClusterUtilities.findSeedHit(clus).getTime();
