@@ -102,9 +102,9 @@ public class AddPlots {
             for (String histogramName : histogramNames) {
                 String path = histogramName.substring(0, histogramName.lastIndexOf('/'));
                 aida.tree().mkdirs(path);
-                System.out.println("Looking for " + histogramName);
+//                System.out.println("Looking for " + histogramName);
                 if (histoNamesList.contains(histogramName)) {
-                    System.out.println("Found " + histogramName);
+//                    System.out.println("Found " + histogramName);
                     IManagedObject object = srcTree.find(histogramName);
                     if (object != null) {
                         IBaseHistogram src = (IBaseHistogram) srcTree.find(histogramName);
