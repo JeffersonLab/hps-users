@@ -205,7 +205,7 @@ public class AddPlots {
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                    System.err.println("Could not find required plot in file " + file.getName());
+                    System.err.println("Could not find required plot "+histogramNames1D.get(i)+" in file " + file.getName());
 //                    System.exit(1);
                 }
             }
