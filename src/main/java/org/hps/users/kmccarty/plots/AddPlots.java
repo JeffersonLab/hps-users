@@ -205,27 +205,34 @@ public class AddPlots {
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                    System.err.println("Could not find required plot "+histogramNames1D.get(i)+" in file " + file.getName());
+                    System.err.println("Could not find required plot " + histogramNames1D.get(i) + " in file " + file.getName());
 //                    System.exit(1);
                 }
             }
             for (int i = 0; i < histogramNames2D.size(); i++) {
                 // Get the histogram object.
-                IHistogram2D histogram = (IHistogram2D) fileTree.find(histogramNames2D.get(i));
+                IHistogram2D histogram = null;
+                try {
+                    histogram = (IHistogram2D) fileTree.find(histogramNames2D.get(i));
 
-                // Iterate over the bins.
-                for (int x = 0; x < xBins2D.get(i); x++) {
-                    for (int y = 0; y < yBins2D.get(i); y++) {
-                        // Get the entries in this bin and the bin average.
-                        int entries = histogram.binEntries(x, y);
-                        double averageX = histogram.binMeanX(x, y);
-                        double averageY = histogram.binMeanY(x, y);
+                    // Iterate over the bins.
+                    for (int x = 0; x < xBins2D.get(i); x++) {
+                        for (int y = 0; y < yBins2D.get(i); y++) {
+                            // Get the entries in this bin and the bin average.
+                            int entries = histogram.binEntries(x, y);
+                            double averageX = histogram.binMeanX(x, y);
+                            double averageY = histogram.binMeanY(x, y);
 
-                        // Add the entries to the compiled plot.
-                        for (int j = 0; j < entries; j++) {
-                            histograms2D.get(i).fill(averageX, averageY);
+                            // Add the entries to the compiled plot.
+                            for (int j = 0; j < entries; j++) {
+                                histograms2D.get(i).fill(averageX, averageY);
+                            }
                         }
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.err.println("Could not find required plot " + histogramNames2D.get(i) + " in file " + file.getName());
+//                    System.exit(1);
                 }
             }
         }
