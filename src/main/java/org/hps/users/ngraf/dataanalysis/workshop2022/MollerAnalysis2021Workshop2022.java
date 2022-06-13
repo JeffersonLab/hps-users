@@ -76,9 +76,11 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
     private int _iyMin = -1;
     private int _iyMax = 1;
     private double _clusterEnergyMin = 0.5;
+    //20220609 empirically determine beam rotation to be 28.5mr
+    private double _beamAxisRotationY = -0.0285;//-0.0305;
 
     protected void detectorChanged(Detector detector) {
-        beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
+        beamAxisRotation.setActiveEuler(Math.PI / 2, _beamAxisRotationY, -Math.PI / 2);
         double bfield = detector.getFieldMap().getField(new BasicHep3Vector(0., 0., 0.)).y();
         _vtxFitter = new BilliorVertexer(bfield);
         System.out.println("using bfield " + bfield);
@@ -306,10 +308,14 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
                                             if (isTop) {
                                                 aida.histogram1D("track1 chisq per ndf top", 100, 0., 30.).fill(track1.getChi2() / track1.getNDF());
                                                 aida.histogram1D("track2 chisq per ndf bottom", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
+                                                aida.histogram2D("track1 chisq per ndf vs momentum top", 100, 0., 30., 100, 0., 2.0).fill(track1.getChi2() / track1.getNDF(), track1_momentum);
+                                                aida.histogram2D("track2 chisq per ndf vs momentum bottom", 100, 0., 30., 100, 0., 2.0).fill(track2.getChi2() / track2.getNDF(), track2_momentum);
                                                 analyzeTwoElectrons(electron1, rp2);
                                             } else {
                                                 aida.histogram1D("track1 chisq per ndf bottom", 100, 0., 30.).fill(track1.getChi2() / track1.getNDF());
                                                 aida.histogram1D("track2 chisq per ndf top", 100, 0., 30.).fill(track2.getChi2() / track2.getNDF());
+                                                aida.histogram2D("track1 chisq per ndf vs momentum bottom", 100, 0., 30., 100, 0., 2.0).fill(track1.getChi2() / track1.getNDF(), track1_momentum);
+                                                aida.histogram2D("track2 chisq per ndf vs momentum top", 100, 0., 30., 100, 0., 2.0).fill(track2.getChi2() / track2.getNDF(), track2_momentum);
                                                 analyzeTwoElectrons(rp2, electron1);
                                             }
                                             vertexTwoElectrons(electron1, rp2);
@@ -453,22 +459,27 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
 
         double theta1x = Math.asin(p1rot.x() / p1rot.magnitude());
         double theta1y = Math.asin(p1rot.y() / p1rot.magnitude());
+        double theta2x = Math.asin(p2rot.x() / p2rot.magnitude());
+        double theta2y = Math.asin(p2rot.y() / p2rot.magnitude());
+
         if (isTopTrack(rp1)) {
             aida.histogram2D("Theta top vs theta bottom", 100, 0.015, thetaMax, 100, 0.015, thetaMax).fill(theta1, theta2);
             aida.histogram2D("Theta top vs momentum", 100, 0.015, thetaMax, 100, 0.25, 1.75).fill(theta1, p1);
             aida.histogram2D("Theta bottom vs momentum", 100, 0.015, thetaMax, 100, 0.25, 1.75).fill(theta2, p2);
             aida.histogram1D("Theta top", 100, 0.015, thetaMax).fill(theta1);
+            aida.histogram1D("ThetaY top fine", 1000, 0.015, thetaMax).fill(theta1y);
             aida.histogram1D("Theta bottom", 100, 0.015, thetaMax).fill(theta2);
+            aida.histogram1D("ThetaY bottom fine", 1000, 0.015, thetaMax).fill(-theta2y);
         } else {
             aida.histogram2D("Theta top vs theta bottom", 100, 0.015, thetaMax, 100, 0.015, thetaMax).fill(theta2, theta1);
             aida.histogram2D("Theta top vs momentum", 100, 0.015, thetaMax, 100, 0.25, 1.75).fill(theta2, p2);
             aida.histogram2D("Theta bottom vs momentum", 100, 0.015, thetaMax, 100, 0.25, 1.75).fill(theta1, p1);
             aida.histogram1D("Theta top", 100, 0.015, thetaMax).fill(theta2);
+            aida.histogram1D("ThetaY top fine", 1000, 0.015, thetaMax).fill(theta2y);
             aida.histogram1D("Theta bottom", 100, 0.015, thetaMax).fill(theta1);
+            aida.histogram1D("ThetaY bottom fine", 1000, 0.015, thetaMax).fill(-theta1y);
         }
-        double theta2x = Math.asin(p2rot.x() / p2rot.magnitude());
-        double theta2y = Math.asin(p2rot.y() / p2rot.magnitude());
-
+        
         double mollerTrackTheta1 = acos(1 - 0.511e-3 * (1 / p1 - 1 / _beamEnergy));
         double mollerTrackTheta2 = acos(1 - 0.511e-3 * (1 / p2 - 1 / _beamEnergy));
 
@@ -628,5 +639,9 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
 
     public void setRequireTightNhitsCut(boolean b) {
         _requireTightNhitsCut = b;
+    }
+
+    public void setBeamAxisRotationY(double d) {
+        _beamAxisRotationY = d;
     }
 }
