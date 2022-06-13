@@ -592,21 +592,26 @@ public class MollerTwoClusterAnalysis2021Workshop2022 extends Driver {
 
         double theta1x = Math.asin(p1rot.x() / p1rot.magnitude());
         double theta1y = Math.asin(p1rot.y() / p1rot.magnitude());
+        double theta2x = Math.asin(p2rot.x() / p2rot.magnitude());
+        double theta2y = Math.asin(p2rot.y() / p2rot.magnitude());
         if (isTopTrack(rp1)) {
             aida.histogram2D("Theta top vs theta bottom", 100, 0.015, thetaMax, 100, 0.015, thetaMax).fill(theta1, theta2);
             aida.histogram2D("Theta top vs momentum", 100, 0.015, thetaMax, 100, 0.25, 1.75).fill(theta1, p1);
             aida.histogram2D("Theta bottom vs momentum", 100, 0.015, thetaMax, 100, 0.25, 1.75).fill(theta2, p2);
             aida.histogram1D("Theta top", 100, 0.015, thetaMax).fill(theta1);
+            aida.histogram1D("ThetaY top fine", 1000, 0.015, thetaMax).fill(theta1y);
             aida.histogram1D("Theta bottom", 100, 0.015, thetaMax).fill(theta2);
+            aida.histogram1D("ThetaY bottom fine", 1000, 0.015, thetaMax).fill(-theta2y);
         } else {
             aida.histogram2D("Theta top vs theta bottom", 100, 0.015, thetaMax, 100, 0.015, thetaMax).fill(theta2, theta1);
             aida.histogram2D("Theta top vs momentum", 100, 0.015, thetaMax, 100, 0.25, 1.75).fill(theta2, p2);
             aida.histogram2D("Theta bottom vs momentum", 100, 0.015, thetaMax, 100, 0.25, 1.75).fill(theta1, p1);
             aida.histogram1D("Theta top", 100, 0.015, thetaMax).fill(theta2);
+            aida.histogram1D("ThetaY top fine", 1000, 0.015, thetaMax).fill(theta2y);
             aida.histogram1D("Theta bottom", 100, 0.015, thetaMax).fill(theta1);
+            aida.histogram1D("ThetaY bottom fine", 1000, 0.015, thetaMax).fill(-theta1y);
         }
-        double theta2x = Math.asin(p2rot.x() / p2rot.magnitude());
-        double theta2y = Math.asin(p2rot.y() / p2rot.magnitude());
+        
 
         double mollerTrackTheta1 = acos(1 - 0.511e-3 * (1 / p1 - 1 / _beamEnergy));
         double mollerTrackTheta2 = acos(1 - 0.511e-3 * (1 / p2 - 1 / _beamEnergy));
@@ -634,9 +639,9 @@ public class MollerTwoClusterAnalysis2021Workshop2022 extends Driver {
         double sumPxRot = p1rot.x() + p2rot.x();
         double sumPyRot = p1rot.y() + p2rot.y();
         double sumPzRot = p1rot.z() + p2rot.z();
-        aida.histogram1D("track sum pX rot", 100, -0.05, 0.05).fill(sumPxRot);
-        aida.histogram1D("track sum pY rot", 100, -0.05, 0.05).fill(sumPyRot);
-        aida.histogram1D("track sum pZ rot", 100, 0., 3.0).fill(sumPzRot);
+        aida.histogram1D("track sum pX rot "+_beamAxisRotationY, 100, -0.05, 0.05).fill(sumPxRot);
+        aida.histogram1D("track sum pY rot "+_beamAxisRotationY, 100, -0.05, 0.05).fill(sumPyRot);
+        aida.histogram1D("track sum pZ rot "+_beamAxisRotationY, 100, 0., 3.0).fill(sumPzRot);
         // step in momentum
         for (int i = 0; i < nSteps; ++i) {
             double pBin = pMin + i * dP;
