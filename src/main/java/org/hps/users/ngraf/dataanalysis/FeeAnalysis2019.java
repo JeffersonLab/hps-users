@@ -42,6 +42,7 @@ public class FeeAnalysis2019 extends Driver {
 
     private boolean _skimFee = true;
     private boolean _isFeeCandidate;
+    private double _minEnergy = 4.0;
     private int _numberOfEventsSelected;
     private int _numberOfEventsProcessed = 0;
     // use this to select an even number of FEEs over the calorimeter face
@@ -63,48 +64,57 @@ public class FeeAnalysis2019 extends Driver {
             CalorimeterHit seed = cluster.getCalorimeterHits().get(0);
             int ix = seed.getIdentifierFieldValue("ix");
             int iy = seed.getIdentifierFieldValue("iy");
+            double e = cluster.getEnergy();
             aida.histogram2D("All clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
             if (cluster.getPosition()[1] > 0.) {
                 aida.histogram1D("Top cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
             } else {
                 aida.histogram1D("Bottom cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
             }
-            long cellId = seed.getCellID();
-            if (crystalOccupancyMap.containsKey(cellId)) {
+            if (e > _minEnergy) {
+                _isFeeCandidate = true;
+                long cellId = seed.getCellID();
+                if (crystalOccupancyMap.containsKey(cellId)) {
 //                                System.out.println("found cell "+cellId+" with "+crystalOccupancyMap.get(cellId)+" hits ");
-                crystalOccupancyMap.put(cellId, crystalOccupancyMap.get(cellId) + 1);
+                    crystalOccupancyMap.put(cellId, crystalOccupancyMap.get(cellId) + 1);
+                } else {
+                    crystalOccupancyMap.put(cellId, 1);
+                }
+                if (crystalOccupancyMap.get(cellId) > _maxClustersPerCrystal) {
+                    _isFeeCandidate = false;
+                    skipEvent = true;
+                } else {
+                    aida.histogram2D("Selected clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                }
             } else {
-                crystalOccupancyMap.put(cellId, 1);
-            }
-            if (crystalOccupancyMap.get(cellId) > _maxClustersPerCrystal) {
                 _isFeeCandidate = false;
                 skipEvent = true;
-            } else {
-                aida.histogram2D("Selected clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
             }
         }
-        setupSensors(event);
-        // let's look at ReconstructedParticles...
-        for (String rpCollectionName : ReconstructedParticleCollectionNames) {
-            if (event.hasCollection(ReconstructedParticle.class, rpCollectionName)) {
-                aida.tree().mkdirs(rpCollectionName);
-                aida.tree().cd(rpCollectionName);
-                List<ReconstructedParticle> rpList = event.get(ReconstructedParticle.class, rpCollectionName);
-                int nTracksWithClusters = 0;
-                int nTracks = 0;
-                for (ReconstructedParticle rp : rpList) {
-                    if (abs(rp.getParticleIDUsed().getPDG()) == 11) {
-                        nTracks++;
-                        if (rp.getClusters().size() == 1) {
-                            nTracksWithClusters++;
+        if (_isFeeCandidate) {
+            setupSensors(event);
+            // let's look at ReconstructedParticles...
+            for (String rpCollectionName : ReconstructedParticleCollectionNames) {
+                if (event.hasCollection(ReconstructedParticle.class, rpCollectionName)) {
+                    aida.tree().mkdirs(rpCollectionName);
+                    aida.tree().cd(rpCollectionName);
+                    List<ReconstructedParticle> rpList = event.get(ReconstructedParticle.class, rpCollectionName);
+                    int nTracksWithClusters = 0;
+                    int nTracks = 0;
+                    for (ReconstructedParticle rp : rpList) {
+                        if (abs(rp.getParticleIDUsed().getPDG()) == 11) {
+                            nTracks++;
+                            if (rp.getClusters().size() == 1) {
+                                nTracksWithClusters++;
+                            }
                         }
+                        analyzeReconstructedParticle(rp);
                     }
-                    analyzeReconstructedParticle(rp);
+                    aida.histogram1D("number of tracks", 5, -0.5, 4.5).fill(nTracks);
+                    aida.histogram1D("number of tracks with clusters", 5, -0.5, 4.5).fill(nTracksWithClusters);
+                    aida.histogram2D("number of clusters vs number of tracks with clusters", 5, -0.5, 4.5, 5, -0.5, 4.5).fill(nClusters, nTracksWithClusters);
+                    aida.tree().cd("..");
                 }
-                aida.histogram1D("number of tracks", 5, -0.5, 4.5).fill(nTracks);
-                aida.histogram1D("number of tracks with clusters", 5, -0.5, 4.5).fill(nTracksWithClusters);
-                aida.histogram2D("number of clusters vs number of tracks with clusters", 5, -0.5, 4.5, 5, -0.5, 4.5).fill(nClusters, nTracksWithClusters);
-                aida.tree().cd("..");
             }
         }
         if (_skimFee) {
