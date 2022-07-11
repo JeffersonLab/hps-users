@@ -59,6 +59,7 @@ public class FeeAnalysis2019 extends Driver {
         List<Cluster> clusters = event.get(Cluster.class, "EcalClustersCorr");
         int nClusters = clusters.size();
         aida.histogram1D("number of Clusters", 5, -0.5, 4.5).fill(nClusters);
+        Cluster feeCluster = null;
         for (Cluster cluster : clusters) {
             aida.histogram2D("All clusters x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
             CalorimeterHit seed = cluster.getCalorimeterHits().get(0);
@@ -84,6 +85,7 @@ public class FeeAnalysis2019 extends Driver {
                     _isFeeCandidate = false;
                     skipEvent = true;
                 } else {
+                    feeCluster = cluster;
                     aida.histogram2D("Selected clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
                 }
             } else {
@@ -109,6 +111,15 @@ public class FeeAnalysis2019 extends Driver {
                             }
                         }
                         analyzeReconstructedParticle(rp);
+                        // let's see if we can match the feeCluster
+                        if (!rp.getClusters().isEmpty()) {
+                            if (rp.getClusters().get(0) == feeCluster) {
+                                // is this feeCluster identified as an electron?
+                                if (rp.getParticleIDUsed().getPDG() != 11) {
+                                    skipEvent = true;
+                                }
+                            }
+                        }
                     }
                     aida.histogram1D("number of tracks", 5, -0.5, 4.5).fill(nTracks);
                     aida.histogram1D("number of tracks with clusters", 5, -0.5, 4.5).fill(nTracksWithClusters);
