@@ -60,34 +60,37 @@ public class FeeAnalysis2019 extends Driver {
         int nClusters = clusters.size();
         aida.histogram1D("number of Clusters", 5, -0.5, 4.5).fill(nClusters);
         Cluster feeCluster = null;
-        for (Cluster cluster : clusters) {
-            aida.histogram2D("All clusters x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
-            CalorimeterHit seed = cluster.getCalorimeterHits().get(0);
-            int ix = seed.getIdentifierFieldValue("ix");
-            int iy = seed.getIdentifierFieldValue("iy");
-            double e = cluster.getEnergy();
-            aida.histogram2D("All clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
-            if (cluster.getPosition()[1] > 0.) {
-                aida.histogram1D("Top cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
-            } else {
-                aida.histogram1D("Bottom cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
-            }
-            if (e > _minEnergy) {
-                _isFeeCandidate = true;
-                skipEvent = false;
-                feeCluster = cluster;
-                long cellId = seed.getCellID();
-                if (crystalOccupancyMap.containsKey(cellId)) {
-//                                System.out.println("found cell "+cellId+" with "+crystalOccupancyMap.get(cellId)+" hits ");
-                    crystalOccupancyMap.put(cellId, crystalOccupancyMap.get(cellId) + 1);
+        _isFeeCandidate = false;
+        if (nClusters == 1) {
+            for (Cluster cluster : clusters) {
+                aida.histogram2D("All clusters x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
+                CalorimeterHit seed = cluster.getCalorimeterHits().get(0);
+                int ix = seed.getIdentifierFieldValue("ix");
+                int iy = seed.getIdentifierFieldValue("iy");
+                double e = cluster.getEnergy();
+                aida.histogram2D("All clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                if (cluster.getPosition()[1] > 0.) {
+                    aida.histogram1D("Top cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
                 } else {
-                    crystalOccupancyMap.put(cellId, 1);
+                    aida.histogram1D("Bottom cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
                 }
-                if (crystalOccupancyMap.get(cellId) > _maxClustersPerCrystal) {
-                    _isFeeCandidate = false;
-                    skipEvent = true;
-                } else {
-                    aida.histogram2D("Selected clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                if (e > _minEnergy) {
+                    _isFeeCandidate = true;
+                    skipEvent = false;
+                    feeCluster = cluster;
+                    long cellId = seed.getCellID();
+                    if (crystalOccupancyMap.containsKey(cellId)) {
+//                                System.out.println("found cell "+cellId+" with "+crystalOccupancyMap.get(cellId)+" hits ");
+                        crystalOccupancyMap.put(cellId, crystalOccupancyMap.get(cellId) + 1);
+                    } else {
+                        crystalOccupancyMap.put(cellId, 1);
+                    }
+                    if (crystalOccupancyMap.get(cellId) > _maxClustersPerCrystal) {
+                        _isFeeCandidate = false;
+                        skipEvent = true;
+                    } else {
+                        aida.histogram2D("Selected clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                    }
                 }
             }
         }
