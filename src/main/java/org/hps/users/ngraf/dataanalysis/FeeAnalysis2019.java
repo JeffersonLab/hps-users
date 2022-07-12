@@ -74,6 +74,7 @@ public class FeeAnalysis2019 extends Driver {
             }
             if (e > _minEnergy) {
                 _isFeeCandidate = true;
+                feeCluster = cluster;
                 long cellId = seed.getCellID();
                 if (crystalOccupancyMap.containsKey(cellId)) {
 //                                System.out.println("found cell "+cellId+" with "+crystalOccupancyMap.get(cellId)+" hits ");
@@ -85,12 +86,8 @@ public class FeeAnalysis2019 extends Driver {
                     _isFeeCandidate = false;
                     skipEvent = true;
                 } else {
-                    feeCluster = cluster;
                     aida.histogram2D("Selected clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
                 }
-            } else {
-                _isFeeCandidate = false;
-                skipEvent = true;
             }
         }
         if (_isFeeCandidate) {
