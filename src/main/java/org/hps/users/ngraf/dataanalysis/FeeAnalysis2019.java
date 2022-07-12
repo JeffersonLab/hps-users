@@ -54,7 +54,7 @@ public class FeeAnalysis2019 extends Driver {
     }
 
     protected void process(EventHeader event) {
-        boolean skipEvent = false;
+        boolean skipEvent = true;
         _numberOfEventsProcessed++;
         List<Cluster> clusters = event.get(Cluster.class, "EcalClustersCorr");
         int nClusters = clusters.size();
@@ -74,6 +74,7 @@ public class FeeAnalysis2019 extends Driver {
             }
             if (e > _minEnergy) {
                 _isFeeCandidate = true;
+                skipEvent = false;
                 feeCluster = cluster;
                 long cellId = seed.getCellID();
                 if (crystalOccupancyMap.containsKey(cellId)) {
