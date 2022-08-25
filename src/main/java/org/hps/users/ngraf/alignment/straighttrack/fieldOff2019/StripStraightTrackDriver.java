@@ -39,9 +39,9 @@ public class StripStraightTrackDriver extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
     private int _numberOfEventsWritten = 0;
-    private boolean _selectTop = true;
+    private boolean _selectTop = false;
     private boolean _selectBottom = true;
-    private boolean _selectFiducial = true;
+    private boolean _selectFiducial = false;
     private int _nMaxEcalClusters = 1;
     private double _minClusterEnergy = 3.0;
     private double[] H02Wire = {0., 0., -(672.71 - 583.44) * 25.4};
@@ -65,11 +65,13 @@ public class StripStraightTrackDriver extends Driver {
         double lineSlope = 0.;
         Cluster topCluster = null;
         Cluster bottomCluster = null;
+        int nClustersAboveCut = 0;
         for (Cluster cluster : clusters) {
             aida.histogram2D("Cal Cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
             aida.histogram1D("Cal cluster energy ", 100, 0., 6.).fill(cluster.getEnergy());
-            if (cluster.getEnergy() > 3) {
-                aida.histogram2D("Cal cluster x vs y, E>3.GeV", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
+            if (cluster.getEnergy() > _minClusterEnergy) {
+                nClustersAboveCut++;
+                aida.histogram2D("Cal cluster x vs y, E> " + _minClusterEnergy + " GeV", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
             }
             if (cluster.getPosition()[1] > 0.) {
                 ++nTopClusters;
@@ -80,6 +82,7 @@ public class StripStraightTrackDriver extends Driver {
                 bottomCluster = cluster;
             }
         }
+        aida.histogram1D("number of clusters above energy cut", 10, 0., 10.).fill(nClustersAboveCut);
 
         // check bottom clusters
         if (_selectBottom) {
@@ -107,6 +110,9 @@ public class StripStraightTrackDriver extends Driver {
             }
             lineSlope = topCluster.getPosition()[1] / (topCluster.getPosition()[2] - H02Wire[2]);
             skipEvent = !analyzeHits(event, topCluster, lineSlope);
+        }
+        if (!skipEvent && nClustersAboveCut != 1) {
+            skipEvent = true;
         }
         if (skipEvent) {
             throw new Driver.NextEventException();
@@ -207,7 +213,7 @@ public class StripStraightTrackDriver extends Driver {
         //lets calculate and compare the slope for hits in 3-4 with 5-6 or 6-7
         // field-off tracks don't hit layer 1&2
         // bottom layer 5 axial is dead
-        // top layer 6 axial is dead
+        // top layer 7 axial is dead
         if (oneHitInEachLayer) {
             double[] hit3 = hitsInWindow.get(layerNames[0]).get(0).getPosition();
             double[] hit4 = hitsInWindow.get(layerNames[1]).get(0).getPosition();
@@ -217,8 +223,8 @@ public class StripStraightTrackDriver extends Driver {
             TwoPointLine tpl67 = new TwoPointLine(hit6[2], hit6[1], hit7[2], hit7[1]);
             aida.histogram1D("slope34", 100, -0.03, 0.03).fill(tpl34.slope());
             aida.histogram1D("slope67", 100, -0.03, 0.03).fill(tpl67.slope());
-            aida.histogram1D("zIntercept34", 100, -5000., -2000.).fill(tpl34.xAxisIntercept());
-            aida.histogram1D("zIntercept67", 100, -5000., -2000.).fill(tpl67.xAxisIntercept());
+            aida.histogram1D("zIntercept34", 100, -3200., -1200.).fill(tpl34.xAxisIntercept());
+            aida.histogram1D("zIntercept67", 100, -3200., -1200.).fill(tpl67.xAxisIntercept());
             aida.histogram1D("slope67 - slope34", 100, -0.005, 0.005).fill(tpl67.slope() - tpl34.slope());
         }
         return oneHitInEachLayer;
