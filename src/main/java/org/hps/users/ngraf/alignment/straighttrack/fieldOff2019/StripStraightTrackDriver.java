@@ -39,21 +39,30 @@ public class StripStraightTrackDriver extends Driver {
 
     private AIDA aida = AIDA.defaultInstance();
     private int _numberOfEventsWritten = 0;
-    private boolean _selectTop = false;
-    private boolean _selectBottom = true;
+    private boolean _selectTop = true;
+    private boolean _selectBottom = false;
     private boolean _selectFiducial = false;
     private int _nMaxEcalClusters = 1;
     private double _minClusterEnergy = 3.0;
     private double[] H02Wire = {0., 0., -(672.71 - 583.44) * 25.4};
+    private String _side = "hole";
 
-    String[] topLayerNames = {"module_L3t_halfmodule_axial_sensor0",
+    String[] topHoleLayerNames = {"module_L3t_halfmodule_axial_sensor0",
         "module_L4t_halfmodule_axial_sensor0",
         "module_L5t_halfmodule_axial_hole_sensor0",
         "module_L6t_halfmodule_axial_hole_sensor0"};
-    String[] bottomLayerNames = {"module_L3b_halfmodule_axial_sensor0",
+    String[] bottomHoleLayerNames = {"module_L3b_halfmodule_axial_sensor0",
         "module_L4b_halfmodule_axial_sensor0",
         "module_L6b_halfmodule_axial_hole_sensor0",
         "module_L7b_halfmodule_axial_hole_sensor0"};
+    String[] topSlotLayerNames = {"module_L3t_halfmodule_axial_sensor0",
+        "module_L4t_halfmodule_axial_sensor0",
+        "module_L5t_halfmodule_axial_slot_sensor0",
+        "module_L6t_halfmodule_axial_slot_sensor0"};
+    String[] bottomSlotLayerNames = {"module_L3b_halfmodule_axial_sensor0",
+        "module_L4b_halfmodule_axial_sensor0",
+        "module_L6b_halfmodule_axial_slot_sensor0",
+        "module_L7b_halfmodule_axial_slot_sensor0"};
 
     protected void process(EventHeader event) {
 
@@ -148,7 +157,23 @@ public class StripStraightTrackDriver extends Driver {
         }
         // lets cut on some global occupancies for the layers we care about...
 
-        String[] layerNames = lineSlope < 0. ? bottomLayerNames : topLayerNames;
+        String[] layerNames = null; //lineSlope < 0. ? bottomHoleLayerNames : topHoleLayerNames;
+        if(_selectTop && _side.equals("hole"))
+        {
+            layerNames = topHoleLayerNames;
+        }
+        if(_selectTop && _side.equals("slot"))
+        {
+            layerNames = topSlotLayerNames;
+        }
+        if(_selectBottom && _side.equals("hole"))
+        {
+            layerNames = bottomHoleLayerNames;
+        }
+        if(_selectBottom && _side.equals("slot"))
+        {
+            layerNames = bottomSlotLayerNames;
+        }
         String topOrBottom = lineSlope < 0. ? "b_half" : "t_half";
         // lets accumulate the hits in the wire-cluster track window
         Map<String, List<TrackerHit>> hitsInWindow = new HashMap();
@@ -288,6 +313,10 @@ public class StripStraightTrackDriver extends Driver {
 
     public void setMinClusterEnergy(double d) {
         _minClusterEnergy = d;
+    }
+
+    public void setSide(String s) {
+        _side = s;
     }
 
 }
