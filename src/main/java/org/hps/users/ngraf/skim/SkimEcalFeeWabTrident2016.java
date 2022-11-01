@@ -479,6 +479,10 @@ public class SkimEcalFeeWabTrident2016 extends Driver {
         _skimWab = b;
     }
 
+    public void setSkimTrident(boolean b) {
+        _skimTrident = b;
+    }
+
     public void setBeamAxisRotationY(double d) {
         _beamAxisRotationY = d;
     }
