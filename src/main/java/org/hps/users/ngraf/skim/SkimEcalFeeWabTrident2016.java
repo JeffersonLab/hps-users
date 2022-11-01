@@ -40,6 +40,7 @@ public class SkimEcalFeeWabTrident2016 extends Driver {
     private double _minSeedHitEnergy = 0.;
     private boolean _requireFiducialFee = false;
     private boolean _requireFiducialWab = false;
+    private boolean _requireFiducialTrident = false;
 
     private double _minTridentClusterEnergy = 0.4;
     private double _maxTridentClusterEnergy = 1.5;
@@ -307,6 +308,7 @@ public class SkimEcalFeeWabTrident2016 extends Driver {
                     aida.histogram1D("trident pysum", 100, -1.0, 1.0).fill(pysum);
                     //let's see if we can clean things up...
 
+                    boolean allFiducial = TriggerModule.inFiducialRegion(positron) && TriggerModule.inFiducialRegion(electron1) && TriggerModule.inFiducialRegion(electron2);
                     if (TriggerModule.inFiducialRegion(positron) && TriggerModule.inFiducialRegion(electron1) && TriggerModule.inFiducialRegion(electron2)) {
                         aida.histogram1D("trident positron energy all fiducial", 100, 0.0, 3.0).fill(positron.getEnergy());
                         aida.histogram1D("trident electron energy 1 all fiducial", 100, 0.0, 3.0).fill(electron1.getEnergy());
@@ -314,8 +316,11 @@ public class SkimEcalFeeWabTrident2016 extends Driver {
                         aida.histogram1D("trident esum all fiducial", 100, 0.0, 3.0).fill(esum);
                         aida.histogram1D("trident pysum all fiducial", 100, -1.0, 1.0).fill(pysum);
                     }
-                    if (esum > .5 && esum < 5.5 && abs(pysum) < 0.2) {
+                    if (esum > .5 && esum < 3.0 && abs(pysum) < 0.2) {
                         isTridentCandidate = true;
+                        if (_requireFiducialTrident && !allFiducial) {
+                            isTridentCandidate = false;
+                        }
                         analyzeTridentEvent(event, tridentClusters);
                     }
                 }
@@ -460,6 +465,10 @@ public class SkimEcalFeeWabTrident2016 extends Driver {
 
     public void setRequireFiducialWab(boolean b) {
         _requireFiducialWab = b;
+    }
+
+    public void setRequireFiducialTrident(boolean b) {
+        _requireFiducialTrident = b;
     }
 
     public void setSkimFee(boolean b) {
