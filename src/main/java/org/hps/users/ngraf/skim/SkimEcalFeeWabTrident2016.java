@@ -52,8 +52,7 @@ public class SkimEcalFeeWabTrident2016 extends Driver {
     double emass = 0.000511;
     double emass2 = emass * emass;
 
-    //20220609 empirically determine beam rotation to be 28.5mr from 2021 Mollers
-    private double _beamAxisRotationY = -0.025;//-0.0305;
+    private double _beamAxisRotationY = -0.0305;
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
 
     protected void detectorChanged(Detector detector) {
