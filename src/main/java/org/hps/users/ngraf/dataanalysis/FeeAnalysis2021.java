@@ -52,7 +52,7 @@ public class FeeAnalysis2021 extends Driver {
     private boolean _analyzeTracksByNhits = true;
     private boolean _analyzeHitsInFit = false;
     private boolean _analyzeMomentumByCalorimeterCell = true;
-    String[] ReconstructedParticleCollectionNames = {"FinalStateParticles", "FinalStateParticles_KF", "OtherElectrons"};//, "OtherElectrons", "OtherElectrons_KF"};
+    String[] ReconstructedParticleCollectionNames = {"FinalStateParticles", "FinalStateParticles_KF"};//, "OtherElectrons"};//, "OtherElectrons", "OtherElectrons_KF"};
 
     private int _maxNumberOfClusters = 3;
     private double _minClusterEnergy = 2.5;
