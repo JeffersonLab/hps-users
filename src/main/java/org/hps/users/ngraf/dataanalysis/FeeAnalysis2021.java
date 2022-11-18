@@ -15,6 +15,7 @@ import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.recon.tracking.TrackData;
 import org.hps.recon.tracking.TrackType;
 import org.hps.recon.tracking.TrackUtils;
+import org.hps.record.triggerbank.TriggerModule;
 import org.lcsim.detector.DetectorElementStore;
 import org.lcsim.detector.IDetectorElement;
 import org.lcsim.detector.identifier.IExpandedIdentifier;
@@ -48,11 +49,13 @@ public class FeeAnalysis2021 extends Driver {
     private AIDA aida = AIDA.defaultInstance();
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
 
-    private boolean _analyzeTracksByNhits = false;
+    private boolean _analyzeTracksByNhits = true;
     private boolean _analyzeHitsInFit = false;
-    private boolean _analyzeMomentumByCalorimeterCell = false;
-    String[] ReconstructedParticleCollectionNames = {"FinalStateParticles", "FinalStateParticles_KF"};//, "OtherElectrons", "OtherElectrons_KF"};
+    private boolean _analyzeMomentumByCalorimeterCell = true;
+    String[] ReconstructedParticleCollectionNames = {"FinalStateParticles", "FinalStateParticles_KF", "OtherElectrons"};//, "OtherElectrons", "OtherElectrons_KF"};
 
+    private int _maxNumberOfClusters = 3;
+    private double _minClusterEnergy = 2.5;
     RelationalTable _hitToStrips;
     RelationalTable _hitToRotated;
     RelationalTable _trackToData;
@@ -60,6 +63,11 @@ public class FeeAnalysis2021 extends Driver {
     Map<String, DescriptiveStatistics> _channelMaps = new HashMap<>();
 
     private SvtSensorTimeCorrector timeCorrector;
+
+    private int _numberOfEventsSelected;
+    private int _numberOfEventsProcessed;
+    private boolean _requireFiducial = true;
+    private boolean _skipEvent;
 
     protected void detectorChanged(Detector detector) {
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
@@ -70,42 +78,75 @@ public class FeeAnalysis2021 extends Driver {
         _hitToStrips = TrackUtils.getHitToStripsTable(event);
         _hitToRotated = TrackUtils.getHitToRotatedTable(event);
 
+        _skipEvent = true;
+        _numberOfEventsProcessed++;
+
+        // 2021 has data at 3.74 and 1.92GeV
+        // adjust cuts accordingly
+        if (event.getRunNumber() > 14623 && event.getRunNumber() < 14674) {
+            _minClusterEnergy = 1.2;
+        }
         List<Cluster> clusters = event.get(Cluster.class, "EcalClustersCorr");
         int nClusters = clusters.size();
         aida.histogram1D("number of Clusters", 5, -0.5, 4.5).fill(nClusters);
+        Cluster maxEnergyCluster = null;
+        double maxEnergy = 0.;
+        // select the maximum energy cluster in the event
         for (Cluster cluster : clusters) {
-            aida.histogram2D("Cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
+            if (cluster.getEnergy() > maxEnergy) {
+                maxEnergy = cluster.getEnergy();
+                maxEnergyCluster = cluster;
+            }
+            aida.histogram2D("All Clusters x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
+            CalorimeterHit seed = cluster.getCalorimeterHits().get(0);
+            int ix = seed.getIdentifierFieldValue("ix");
+            int iy = seed.getIdentifierFieldValue("iy");
+            aida.histogram2D("cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
             if (cluster.getPosition()[1] > 0.) {
-                aida.histogram1D("Top cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
+                aida.histogram1D("Top cluster energy ", 100, 0.0, 5.0).fill(cluster.getEnergy());
+                if (nClusters == 1) {
+                    aida.histogram1D("Top single cluster energy ", 100, 0.0, 5.0).fill(cluster.getEnergy());
+                }
             } else {
-                aida.histogram1D("Bottom cluster energy ", 200, 0.0, 10.0).fill(cluster.getEnergy());
+                aida.histogram1D("Bottom cluster energy ", 100, 0.0, 5.0).fill(cluster.getEnergy());
+                if (nClusters == 1) {
+                    aida.histogram1D("Bottom single cluster energy ", 100, 0.0, 5.0).fill(cluster.getEnergy());
+                }
             }
         }
+        aida.histogram1D("Maximum cluster energy ", 100, 0.0, 5.0).fill(maxEnergy);
+
         setupSensors(event);
         _trackToData = getKFTrackDataRelations(event);
 
-        // let's look at ReconstructedParticles...
+        // let's look at ReconstructedParticles and find the matching RP...
         for (String rpCollectionName : ReconstructedParticleCollectionNames) {
             if (event.hasCollection(ReconstructedParticle.class, rpCollectionName)) {
                 aida.tree().mkdirs(rpCollectionName);
                 aida.tree().cd(rpCollectionName);
                 List<ReconstructedParticle> rpList = event.get(ReconstructedParticle.class, rpCollectionName);
-                int nTracksWithClusters = 0;
-                int nTracks = 0;
+                ReconstructedParticle matchedRP = null;
                 for (ReconstructedParticle rp : rpList) {
                     if (abs(rp.getParticleIDUsed().getPDG()) == 11) {
-                        nTracks++;
-                        if (rp.getClusters().size() == 1) {
-                            nTracksWithClusters++;
+                        if (!rp.getClusters().isEmpty()) {
+                            if (rp.getClusters().get(0) == maxEnergyCluster) {
+                                matchedRP = rp;
+                            }
                         }
                     }
-                    analyzeReconstructedParticle(rp);
                 }
-                aida.histogram1D("number of tracks", 5, -0.5, 4.5).fill(nTracks);
-                aida.histogram1D("number of tracks with clusters", 5, -0.5, 4.5).fill(nTracksWithClusters);
-                aida.histogram2D("number of clusters vs number of tracks with clusters", 5, -0.5, 4.5, 5, -0.5, 4.5).fill(nClusters, nTracksWithClusters);
+                if (matchedRP != null) {
+                    if (nClusters == 1 && matchedRP.getClusters().get(0).getEnergy() > _minClusterEnergy) {
+                        analyzeReconstructedParticle(matchedRP);
+                    }
+                }
                 aida.tree().cd("..");
             }
+        }
+        if (_skipEvent) {
+            throw new Driver.NextEventException();
+        } else {
+            _numberOfEventsSelected++;
         }
     }
 
@@ -128,21 +169,11 @@ public class FeeAnalysis2021 extends Driver {
                 analyzeTrack(rp);
             }
         }
-        if (rp.getClusters().size() == 1) {
-            Cluster c = rp.getClusters().get(0);
-            double e = rp.getEnergy();
-            aida.histogram2D(type + "single Cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(c.getPosition()[0], c.getPosition()[1]);
-            if (c.getPosition()[1] > 0.) {
-                aida.histogram1D(type + "single Top cluster energy ", 200, 0.0, 10.0).fill(c.getEnergy());
-            } else {
-                aida.histogram1D(type + "single Bottom cluster energy ", 200, 0.0, 10.0).fill(c.getEnergy());
-            }
-        }
     }
 
     void analyzeTrack(ReconstructedParticle rp) {
         boolean isGBL = TrackType.isGBL(rp.getType());
-        int minNhits = isGBL ? 6 : 12;
+        int minNhits = isGBL ? 6 : 13;
         String trackDir = isGBL ? "gbl" : "htf";
         if (rp.getType() == 1) {
             trackDir = "kf";
@@ -153,6 +184,17 @@ public class FeeAnalysis2021 extends Driver {
         Track t = rp.getTracks().get(0);
         int nHits = t.getTrackerHits().size();
         if (nHits >= minNhits) {
+            // ensure that there are no crossovers
+            boolean[] holeOrSlot = isHoleorSlotTrack(t);
+            boolean isHole = holeOrSlot[0] && !holeOrSlot[1];
+            boolean isSlot = !holeOrSlot[0] && holeOrSlot[1];
+            String side = " overlap ";
+            if (isHole) {
+                side = " hole ";
+            }
+            if (isSlot) {
+                side = " slot ";
+            }
 //        aida.cloud1D("ReconstructedParticle Type").fill(rp.getType());
 //        aida.cloud1D("Track Type").fill(t.getType());
             //rotate into physiscs frame of reference
@@ -168,17 +210,24 @@ public class FeeAnalysis2021 extends Driver {
             double dEdx = t.getdEdx();
             double e = rp.getEnergy();
             double p = rp.getMomentum().magnitude();
-            String topOrBottom = isTopTrack(t) ? " top " : " bottom ";
+//            String topOrBottom = isTopTrack(t) ? " top " : " bottom ";
+            String topOrBottom = rp.getMomentum().y() > 0 ? " top " : " bottom ";
             aida.histogram1D("Track chisq per df" + topOrBottom, 100, 0., 50.).fill(chiSquared / ndf);
             aida.histogram1D("Track chisq prob" + topOrBottom, 100, 0., 1.).fill(chisqProb);
             aida.histogram1D("Track nHits" + topOrBottom, 14, 0.5, 14.5).fill(t.getTrackerHits().size());
             aida.histogram1D("Track momentum" + topOrBottom, 200, 0., 10.0).fill(p);
+            aida.histogram1D("Track momentum" + topOrBottom + side, 200, 0., 10.0).fill(p);
             aida.histogram1D("Track deDx" + topOrBottom, 100, 0.00004, 0.00013).fill(t.getdEdx());
             aida.histogram1D("Track theta" + topOrBottom, 100, 0.010, 0.160).fill(theta);
             aida.histogram2D("Track theta vs p" + topOrBottom, 100, 0.010, 0.160, 100, 0., 10.0).fill(theta, p);
             aida.histogram1D("rp x0" + topOrBottom, 100, -0.50, 0.50).fill(TrackUtils.getX0(t));
             aida.histogram1D("rp y0" + topOrBottom, 100, -5.0, 5.0).fill(TrackUtils.getY0(t));
             aida.histogram1D("rp z0" + topOrBottom, 100, -1.0, 1.0).fill(TrackUtils.getZ0(t));
+
+            double tanLambda = t.getTrackStates().get(0).getTanLambda();
+            aida.histogram1D("track tanlambda" + topOrBottom + " " + nHits + " hits", 50, 0.01, 0.07).fill(abs(tanLambda));
+            aida.histogram2D("Track tanlambda vs p" + topOrBottom + " " + nHits + " hits", 50, 0.01, 0.07, 100, 0., 7.0).fill(abs(tanLambda), p);
+            aida.profile1D("Track tanlambda vs p profile" + topOrBottom + " " + nHits + " hits", 50, 0.01, 0.07).fill(abs(tanLambda), p);
 
             //
             if (_analyzeTracksByNhits) {
@@ -199,21 +248,138 @@ public class FeeAnalysis2021 extends Driver {
                 if (_analyzeHitsInFit && rp.getType() == 1) {
                     analyzeHitsInFit(rp);
                 }
+                boolean isFiducial = TriggerModule.inFiducialRegion(c);
+                CalorimeterHit seed = c.getCalorimeterHits().get(0);
+                int ix = seed.getIdentifierFieldValue("ix");
+                int iy = seed.getIdentifierFieldValue("iy");
+                aida.histogram2D("track momentum vs cluster x iy: " + iy, 320, -270.0, 370.0, 100, 0., 10.0).fill(c.getPosition()[0], p);
                 aida.histogram1D("EoverP" + topOrBottom, 100, 0., 2.).fill(e / p);
                 aida.histogram2D("E vs p" + topOrBottom, 100, 2., 7., 100, 2., 7.).fill(e, p);
+
+                //Analyze track-cluster matching...
+                //note that the reference point coordinates are listed as (z,x,y).
+                double[] tpos = t.getTrackStates().get(t.getTrackStates().size() - 1).getReferencePoint();
+                double tx = tpos[1];
+                double ty = tpos[2];
+                double tz = tpos[0];
+                double[] cpos = c.getPosition();
+                double cx = cpos[0];
+                double cy = cpos[1];
+                double cz = cpos[2];
+
+                double dx = cx - tx;
+                double dy = cy - ty;
+                double thetaY = abs(Math.asin(rprot.y() / rprot.magnitude()));
+
+                aida.cloud1D("cluster z").fill(cz);
+                aida.cloud1D("track z").fill(tz);
+                aida.histogram2D("cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cx, cy);
+                aida.histogram2D("track x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(tx, ty);
+
+                aida.histogram1D("cluster x - track x", 100, -15., 15.).fill(dx);
+                aida.histogram2D("cluster x - track x vs cluster x", 320, -270.0, 370.0, 100, -15., 15.).fill(cx, dx);
+                if (cy > 0) {
+                    aida.histogram1D("cluster x - track x top", 100, -15., 15.).fill(dx);
+                    aida.histogram2D("cluster x - track x vs cluster x top", 320, -270.0, 370.0, 100, -15., 15.).fill(cx, dx);
+                } else {
+                    aida.histogram1D("cluster x - track x bottom", 100, -15., 15.).fill(dx);
+                    aida.histogram2D("cluster x - track x vs cluster x bottom", 320, -270.0, 370.0, 100, -15., 15.).fill(cx, dx);
+                }
+                aida.histogram2D("cluster x - track x vs cluster y", 90, -90.0, 90.0, 100, -15., 15.).fill(cy, dx);
+                aida.histogram1D("cluster y - track y", 100, -10., 10.).fill(dy);
+                aida.histogram2D("cluster y - track y vs cluster x", 320, -270.0, 370.0, 100, -10., 10.).fill(cx, dy);
+                aida.histogram2D("cluster y - track y vs cluster y", 90, -90.0, 90.0, 100, -10., 10.).fill(cy, dy);
+                aida.histogram2D("cluster y - track y vs track y", 90, -90.0, 90.0, 100, -10., 10.).fill(ty, dy);
+                if (cy > 0) {
+                    aida.histogram1D("ThetaY top", 100, 0.01, 0.07).fill(thetaY);
+                    aida.histogram1D("cluster y - track y top", 100, -10., 10.).fill(dy);
+                    aida.histogram2D("cluster y - track y vs cluster x top", 320, -270.0, 370.0, 100, -10., 10.).fill(cx, dy);
+                    aida.histogram2D("cluster y - track y vs thetaY top", 100, 0.01, 0.07, 100, -10., 10.).fill(thetaY, dy);
+                } else {
+                    aida.histogram1D("ThetaY bottom", 100, 0.01, 0.07).fill(thetaY);
+                    aida.histogram1D("cluster y - track y bottom", 100, -10., 10.).fill(dy);
+                    aida.histogram2D("cluster y - track y vs cluster x bottom", 320, -270.0, 370.0, 100, -10., 10.).fill(cx, dy);
+                    aida.histogram2D("cluster y - track y vs thetaY bottom", 100, 0.01, 0.07, 100, -10., 10.).fill(thetaY, dy);
+                }
+                if (isFiducial) {
+                    aida.tree().mkdirs("fiducial");
+                    aida.tree().cd("fiducial");
+
+                    aida.histogram2D("cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(cx, cy);
+                    aida.histogram2D("track x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(tx, ty);
+                    aida.histogram1D("Track momentum" + topOrBottom, 100, 0., 5.0).fill(p);
+
+                    aida.histogram1D("cluster x - track x", 100, -15., 15.).fill(dx);
+                    aida.histogram2D("cluster x - track x vs cluster x", 320, -270.0, 370.0, 100, -15., 15.).fill(cx, dx);
+                    if (cy > 0) {
+                        aida.histogram1D("cluster energy top", 100, 0.0, 5.0).fill(c.getEnergy());
+                        aida.histogram1D("cluster x - track x top", 100, -15., 15.).fill(dx);
+                        aida.histogram2D("cluster x - track x vs cluster x top", 320, -270.0, 370.0, 100, -15., 15.).fill(cx, dx);
+                    } else {
+                        aida.histogram1D("cluster energy bottom", 100, 0.0, 5.0).fill(c.getEnergy());
+                        aida.histogram1D("cluster x - track x bottom", 100, -15., 15.).fill(dx);
+                        aida.histogram2D("cluster x - track x vs cluster x bottom", 320, -270.0, 370.0, 100, -15., 15.).fill(cx, dx);
+                    }
+                    aida.histogram2D("cluster x - track x vs cluster y", 90, -90.0, 90.0, 100, -15., 15.).fill(cy, dx);
+                    aida.histogram1D("cluster y - track y", 100, -10., 10.).fill(dy);
+                    aida.histogram2D("cluster y - track y vs cluster x", 320, -270.0, 370.0, 100, -10., 10.).fill(cx, dy);
+                    aida.histogram2D("cluster y - track y vs cluster y", 90, -90.0, 90.0, 100, -10., 10.).fill(cy, dy);
+                    aida.histogram2D("cluster y - track y vs track y", 90, -90.0, 90.0, 100, -10., 10.).fill(ty, dy);
+                    if (cy > 0) {
+                        aida.histogram1D("ThetaY top", 100, 0.01, 0.07).fill(thetaY);
+                        aida.histogram1D("cluster y - track y top", 100, -10., 10.).fill(dy);
+                        aida.histogram2D("cluster y - track y vs cluster x top", 320, -270.0, 370.0, 100, -10., 10.).fill(cx, dy);
+                        aida.histogram2D("cluster y - track y vs thetaY top", 100, 0.01, 0.07, 100, -10., 10.).fill(thetaY, dy);
+                    } else {
+                        aida.histogram1D("ThetaY bottom", 100, 0.01, 0.07).fill(thetaY);
+                        aida.histogram1D("cluster y - track y bottom", 100, -10., 10.).fill(dy);
+                        aida.histogram2D("cluster y - track y vs cluster x bottom", 320, -270.0, 370.0, 100, -10., 10.).fill(cx, dy);
+                        aida.histogram2D("cluster y - track y vs thetaY bottom", 100, 0.01, 0.07, 100, -10., 10.).fill(thetaY, dy);
+                    }
+
+                    // by side
+                    aida.histogram1D("cluster x - track x" + side, 100, -15., 15.).fill(dx);
+                    aida.histogram2D("cluster x - track x vs cluster x" + side, 320, -270.0, 370.0, 100, -15., 15.).fill(cx, dx);
+                    if (cy > 0) {
+                        aida.histogram1D("cluster x - track x top" + side, 100, -15., 15.).fill(dx);
+                        aida.histogram2D("cluster x - track x vs cluster x top" + side, 320, -270.0, 370.0, 100, -15., 15.).fill(cx, dx);
+                    } else {
+                        aida.histogram1D("cluster x - track x bottom" + side, 100, -15., 15.).fill(dx);
+                        aida.histogram2D("cluster x - track x vs cluster x bottom" + side, 320, -270.0, 370.0, 100, -15., 15.).fill(cx, dx);
+                    }
+                    aida.histogram2D("cluster x - track x vs cluster y" + side, 90, -90.0, 90.0, 100, -15., 15.).fill(cy, dx);
+                    aida.histogram1D("cluster y - track y" + side, 100, -10., 10.).fill(dy);
+                    aida.histogram2D("cluster y - track y vs cluster x" + side, 320, -270.0, 370.0, 100, -10., 10.).fill(cx, dy);
+                    aida.histogram2D("cluster y - track y vs cluster y" + side, 90, -90.0, 90.0, 100, -10., 10.).fill(cy, dy);
+                    if (cy > 0) {
+                        aida.histogram1D("ThetaY top" + side, 100, 0.01, 0.07).fill(thetaY);
+                        aida.histogram2D("cluster y - track y vs cluster x top" + side, 320, -270.0, 370.0, 100, -10., 10.).fill(cx, dy);
+                        aida.histogram2D("cluster y - track y vs thetaY top" + side, 100, 0.01, 0.07, 100, -10., 10.).fill(thetaY, dy);
+                    } else {
+                        aida.histogram1D("ThetaY bottom" + side, 100, 0.01, 0.07).fill(thetaY);
+                        aida.histogram2D("cluster y - track y vs cluster x bottom" + side, 320, -270.0, 370.0, 100, -10., 10.).fill(cx, dy);
+                        aida.histogram2D("cluster y - track y vs thetaY bottom" + side, 100, 0.01, 0.07, 100, -10., 10.).fill(thetaY, dy);
+                    }
+                    aida.tree().cd("..");
+                }
+
                 if (_analyzeMomentumByCalorimeterCell) {
                     aida.tree().mkdirs("calorimeter cell analysis");
                     aida.tree().cd("calorimeter cell analysis");
-                    CalorimeterHit seed = c.getCalorimeterHits().get(0);
-                    int ix = seed.getIdentifierFieldValue("ix");
-                    int iy = seed.getIdentifierFieldValue("iy");
                     aida.histogram2D("cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
                     aida.histogram1D("Track momentum ix: " + ix + " iy: " + iy, 100, 0., 10.0).fill(p);
-//                aida.histogram1D("Track theta ix: " + ix + " iy: " + iy, 100, 0.010, 0.160).fill(theta);
-//                aida.histogram2D("Track theta vs p ix: " + ix + " iy: " + iy, 100, 0.010, 0.160, 100, 0., 10.0).fill(theta, p);
-//                aida.histogram2D("track momentum vs cluster x iy: " + iy, 320, -270.0, 370.0, 100, 0., 10.0).fill(c.getPosition()[0], p);
+                    aida.histogram1D("Track theta ix: " + ix + " iy: " + iy, 100, 0.010, 0.160).fill(theta);
+                    aida.histogram2D("Track theta vs p ix: " + ix + " iy: " + iy, 100, 0.010, 0.160, 100, 0., 10.0).fill(theta, p);
 //cng                analyzeTrackHits(ix, iy, t);
                     aida.tree().cd("..");
+                }
+                // have a good FEE candidate here...
+                _skipEvent = false;
+                if (_requireFiducial && !isFiducial) {
+                    _skipEvent = true;
+                }
+                if (!_skipEvent) {
+                    _numberOfEventsSelected++;
                 }
             } // end of check on whether RP has ECal cluster
         }// end of check on minimum number of hits on track
@@ -223,7 +389,7 @@ public class FeeAnalysis2021 extends Driver {
     private void analyzeHitsInFit(ReconstructedParticle rp) {
 
         Cluster clus = rp.getClusters().get(0);
-        if (clus.getEnergy() > 2.5) {
+        if (clus.getEnergy() > _minClusterEnergy) {
             aida.tree().mkdirs("hits in fit analysis");
             aida.tree().cd("hits in fit analysis");
             double clusterTime = ClusterUtilities.findSeedHit(clus).getTime();
@@ -239,13 +405,13 @@ public class FeeAnalysis2021 extends Driver {
             aida.histogram1D("Track time - track time corrected", 50, -10., -40.).fill(trackTime - correctedTrackTime);
 
             if (clus.getPosition()[1] > 0) {
-                aida.histogram1D("Top cluster energy ", 200, 0.0, 10.0).fill(clus.getEnergy());
+                aida.histogram1D("Top cluster energy ", 100, 0.0, 5.0).fill(clus.getEnergy());
                 aida.histogram1D("Track time - cluster time top", 100, -70., -30.).fill(trackTime - clusterTime);
                 aida.histogram1D("Track time top", 100, -20., 0.).fill(trackTime);
                 aida.histogram1D("Track time corrected - cluster time top", 100, -70., -30.).fill(correctedTrackTime - clusterTime);
                 aida.histogram1D("Track time corrected top", 100, 0., 100.).fill(correctedTrackTime);
             } else {
-                aida.histogram1D("Bottom cluster energy ", 200, 0.0, 10.0).fill(clus.getEnergy());
+                aida.histogram1D("Bottom cluster energy ", 100, 0.0, 5.0).fill(clus.getEnergy());
                 aida.histogram1D("Track time - cluster time bottom", 100, -70., -30.).fill(trackTime - clusterTime);
                 aida.histogram1D("Track time bottom", 100, -20., 0.).fill(trackTime);
                 aida.histogram1D("Track time corrected - cluster time bottom", 100, -70., -30.).fill(correctedTrackTime - clusterTime);
@@ -263,6 +429,33 @@ public class FeeAnalysis2021 extends Driver {
             }
             aida.tree().cd("..");
         }
+    }
+
+    private boolean[] isHoleorSlotTrack(Track t) {
+        boolean isHole = false;
+        boolean isSlot = false;
+        int nHole = 0;
+        int nSlot = 0;
+        for (TrackerHit hit : t.getTrackerHits()) {
+            List<RawTrackerHit> rawHits = hit.getRawHits();
+            for (RawTrackerHit rawHit : rawHits) {
+                String sensorName = ((HpsSiSensor) rawHit.getDetectorElement()).getName();
+                if (sensorName.contains("_hole")) {
+                    nHole++;
+                }
+                if (sensorName.contains("_slot")) {
+                    nSlot++;
+                }
+            }
+        }
+        // require either all hole or all slot hits
+        if (nHole > 0 && nHole * nSlot == 0) {
+            isHole = true;
+        }
+        if (nSlot > 0 && nHole * nSlot == 0) {
+            isSlot = true;
+        }
+        return new boolean[]{isHole, isSlot};
     }
 
     private void analyzeTrackHits(int ix, int iy, Track t) {
@@ -291,14 +484,15 @@ public class FeeAnalysis2021 extends Driver {
 
     @Override
     protected void endOfData() {
-        List<String> sortedNames = new ArrayList<>(_channelMaps.keySet());
-        Collections.sort(sortedNames);
-        System.out.println(" Sensor    Min    Max  Mean  RMS");
-        for (String s : sortedNames) {
-            DescriptiveStatistics dat = _channelMaps.get(s);
-            System.out.format("%52s : %5.1f %5.1f %6.4f %6.4f %n", StringUtils.rightPad(s, 52), dat.getMin(), dat.getMax(), dat.getMean(), dat.getStandardDeviation());
-//            System.out.println(s + " : " + dat.getMin()+" "+ dat.getMax() + " " +dat.getMean() + " " + dat.getStandardDeviation());
-        }
+//        List<String> sortedNames = new ArrayList<>(_channelMaps.keySet());
+//        Collections.sort(sortedNames);
+//        System.out.println(" Sensor    Min    Max  Mean  RMS");
+//        for (String s : sortedNames) {
+//            DescriptiveStatistics dat = _channelMaps.get(s);
+//            System.out.format("%52s : %5.1f %5.1f %6.4f %6.4f %n", StringUtils.rightPad(s, 52), dat.getMin(), dat.getMax(), dat.getMean(), dat.getStandardDeviation());
+////            System.out.println(s + " : " + dat.getMin()+" "+ dat.getMax() + " " +dat.getMean() + " " + dat.getStandardDeviation());
+//        }
+        System.out.println("Selected " + _numberOfEventsSelected + " of " + _numberOfEventsProcessed + "  events processed");
     }
 
     private boolean isTopTrack(Track t) {
@@ -384,6 +578,10 @@ public class FeeAnalysis2021 extends Driver {
 
     public void setAnalyzeMomentumByCalorimeterCell(boolean b) {
         _analyzeMomentumByCalorimeterCell = b;
+    }
+
+    public void setRequireFiducial(boolean b) {
+        _requireFiducial = b;
     }
 
 }
