@@ -11,6 +11,7 @@ import org.hps.record.triggerbank.TriggerModule;
 import org.lcsim.event.CalorimeterHit;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
+import org.lcsim.event.ReconstructedParticle;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
 
@@ -43,9 +44,18 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
     private boolean _skimWab = true;
     private boolean _skimTrident = true;
 
+    List<ReconstructedParticle> _feeCandidates = new ArrayList<ReconstructedParticle>();
+    List<ReconstructedParticle> _wabCandidates = new ArrayList<ReconstructedParticle>();
+    List<ReconstructedParticle> _tridentCandidates = new ArrayList<ReconstructedParticle>();
+    List<ReconstructedParticle> _rpList;
+
     protected void process(EventHeader event) {
         boolean skipEvent = true;
         _numberOfEventsProcessed++;
+        _feeCandidates.clear();
+        _wabCandidates.clear();
+        _tridentCandidates.clear();
+        _rpList = event.get(ReconstructedParticle.class, "FinalStateParticles_KF");
         List<Cluster> ecalClusters = event.get(Cluster.class, "EcalClustersCorr");
         boolean isWabCandidate = false;
         if (_skimWab) {
@@ -61,14 +71,17 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
         }
         if (isFeeCandidate) {
             _numberOfFeesSelected++;
+            event.put("EcalFeeCandidate", _feeCandidates, ReconstructedParticle.class, 0);
             skipEvent = false;
         }
         if (isWabCandidate) {
             _numberOfWabsSelected++;
+            event.put("EcalWabCandidate", _wabCandidates, ReconstructedParticle.class, 0);
             skipEvent = false;
         }
         if (isTridentCandidate) {
             _numberOfTridentsSelected++;
+            event.put("EcalTridentCandidate", _tridentCandidates, ReconstructedParticle.class, 0);
             skipEvent = false;
         }
         if (skipEvent) {
@@ -112,6 +125,14 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
                             } else {
                                 aida.histogram1D("Bottom cluster energy" + fid, 100, 0.5, 5.).fill(cluster.getEnergy());
                                 aida.histogram1D("Bottom cluster energy " + nClusters + " clusters" + fid, 100, 0.5, 5.).fill(cluster.getEnergy());
+                            }
+                            // now find the ReconstructedParticle which is associated with this cluster
+                            for (ReconstructedParticle rp : _rpList) {
+                                if (!rp.getClusters().isEmpty()) {
+                                    if (rp.getClusters().get(0) == cluster) {
+                                        _feeCandidates.add(rp);
+                                    }
+                                }
                             }
                         }
                     }
@@ -205,6 +226,17 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
                                     if (wabIsFiducial) {
                                         aida.tree().cd("..");
                                     }
+                                    // now find the ReconstructedParticles which are associated with these clusters
+                                    for (ReconstructedParticle rp : _rpList) {
+                                        if (!rp.getClusters().isEmpty()) {
+                                            if (rp.getClusters().get(0) == c1) {
+                                                _wabCandidates.add(rp);
+                                            }
+                                            if (rp.getClusters().get(0) == c2) {
+                                                _wabCandidates.add(rp);
+                                            }
+                                        }
+                                    }
                                 }
                             } // end of check on esum
                         } // end of check on opposite hemispheres
@@ -278,6 +310,16 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
                     aida.histogram1D("trident pysum", 100, -1.0, 1.0).fill(pysum);
                     if (esum > 0.5 && esum < 5. && abs(pysum) < 0.2) {
                         isTridentCandidate = true;
+                        // now find the ReconstructedParticles which are associated with these clusters
+                        for (ReconstructedParticle rp : _rpList) {
+                            if (!rp.getClusters().isEmpty()) {
+                                for (Cluster c : tridentClusters) {
+                                    if (rp.getClusters().get(0) == c) {
+                                        _tridentCandidates.add(rp);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -42,7 +42,7 @@ public class MollerAnalysis2021Workshop2022 extends Driver {
     private final BasicHep3Matrix beamAxisRotation = new BasicHep3Matrix();
 
     private boolean _analyzeMollerCollections = true;
-    private String[] mollerCollectionNames = {"UnconstrainedMollerVertices", "UnconstrainedMollerVertices_KF"};
+    private String[] mollerCollectionNames = {"UnconstrainedMollerVertices_KF"};
 
     String[] ReconstructedParticleCollectionNames = {"FinalStateParticles_KF"};
 
