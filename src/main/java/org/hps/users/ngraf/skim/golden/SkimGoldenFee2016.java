@@ -1,7 +1,9 @@
 package org.hps.users.ngraf.skim.golden;
 
 import static java.lang.Math.abs;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.record.triggerbank.TriggerModule;
 import org.lcsim.event.CalorimeterHit;
@@ -29,6 +31,9 @@ public class SkimGoldenFee2016 extends Driver {
     private boolean _requireFiducialFee = true;
 
     String[] ReconstructedParticleCollectionNames = {"FinalStateParticles_KF", "OtherElectrons"};
+    // use this to select an equal number of FEEs per crystal over the calorimeter face
+    private int _maxClustersPerCrystal = 100;
+    private Map<Long, Integer> crystalOccupancyMap = new HashMap<>();
 
     protected void process(EventHeader event) {
         boolean skipEvent = true;
@@ -55,6 +60,21 @@ public class SkimGoldenFee2016 extends Driver {
                                     int iy = seed.getIdentifierFieldValue("iy");
                                     aida.histogram2D("cluster ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
                                     aida.histogram2D("event cluster x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(c.getPosition()[0], c.getPosition()[1]);
+
+                                    long cellId = seed.getCellID();
+                                    if (crystalOccupancyMap.containsKey(cellId)) {
+//                                System.out.println("found cell "+cellId+" with "+crystalOccupancyMap.get(cellId)+" hits ");
+                                        crystalOccupancyMap.put(cellId, crystalOccupancyMap.get(cellId) + 1);
+                                    } else {
+                                        crystalOccupancyMap.put(cellId, 1);
+                                    }
+                                    if (crystalOccupancyMap.get(cellId) > _maxClustersPerCrystal) {
+                                        isGoldenFee = false;
+                                        skipEvent = true;
+                                    } else {
+                                        aida.histogram2D("Selected clusters ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                                    }
+
                                 }
                             }
                         }
@@ -95,5 +115,9 @@ public class SkimGoldenFee2016 extends Driver {
 
     public void setRequireFiducialFee(boolean b) {
         _requireFiducialFee = b;
+    }
+
+    public void setMaxClustersPerCrystal(int i) {
+        _maxClustersPerCrystal = i;
     }
 }
