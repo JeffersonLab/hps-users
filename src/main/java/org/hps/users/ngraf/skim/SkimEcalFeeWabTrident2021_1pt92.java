@@ -313,7 +313,7 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
                         esum += c.getEnergy();
                         eysum += c.getEnergy() * signum(c.getPosition()[1]);
                     }
-                    aida.histogram1D("trident esum", 100, 0., 10.).fill(esum);
+                    aida.histogram1D("trident esum", 100, 0., 3.).fill(esum);
                     aida.histogram1D("trident eysum", 100, -3.0, 3.0).fill(eysum);
                     aida.histogram2D("esum vs eysum", 100, 0., 3., 100, -3.0, 3.0).fill(esum, eysum);
                     aida.histogram1D("trident eysum " + nClustersInEvent + " clusters in event", 100, -3.0, 3.0).fill(eysum);
@@ -332,6 +332,26 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
                             }
                         }
                         if (isTridentCandidate) {
+                            aida.tree().mkdirs("selected events");
+                            aida.tree().cd("selected events");
+                            // some diagnostics histograms...
+                            aida.histogram1D("trident esum", 100, 0., 3.).fill(esum);
+                            aida.histogram1D("trident eysum", 100, -3.0, 3.0).fill(eysum);
+                            aida.histogram2D("esum vs eysum", 100, 0., 3., 100, -3.0, 3.0).fill(esum, eysum);
+                            aida.histogram1D("trident eysum " + nClustersInEvent + " clusters in event", 100, -3.0, 3.0).fill(eysum);
+
+                            int j = 0;
+                            for (Cluster c : tridentClusters) {
+                                CalorimeterHit seed = c.getCalorimeterHits().get(0);
+                                int ix = seed.getIdentifierFieldValue("ix");
+                                int iy = seed.getIdentifierFieldValue("iy");
+                                aida.histogram2D("cluster " + j + " ix vs iy", 47, -23.5, 23.5, 11, -5.5, 5.5).fill(ix, iy);
+                                aida.histogram2D("cluster " + j + "  x vs y", 320, -270.0, 370.0, 90, -90.0, 90.0).fill(c.getPosition()[0], c.getPosition()[1]);
+                                aida.histogram1D("cluster " + j + "  energy", 100, 0., 2.).fill(c.getEnergy());
+                                ++j;
+                            }
+
+                            aida.tree().cd("..");
                             // now find the ReconstructedParticles which are associated with these clusters
                             for (ReconstructedParticle rp : _rpList) {
                                 if (!rp.getClusters().isEmpty()) {
