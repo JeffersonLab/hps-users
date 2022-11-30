@@ -3,6 +3,7 @@ package org.hps.users.ngraf.skim;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
 import static java.lang.Math.abs;
+import static java.lang.Math.signum;
 import static java.lang.Math.sqrt;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
     private double _minSeedHitEnergy = 0.95;//1.9;
     private boolean _requireFiducialFee = true;
     private boolean _requireFiducialWab = true;
+    private boolean _requireFiducialTrident = true;
     private double _cluster1MinEnergy = 0.0;//0.9;//1.8;
     private double _cluster1MaxEnergy = 1.7;//1.4;//2.8;
     private double _cluster2MinEnergy = 0.0;//0.5;
@@ -71,17 +73,23 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
         }
         if (isFeeCandidate) {
             _numberOfFeesSelected++;
-            event.put("EcalFeeCandidate", _feeCandidates, ReconstructedParticle.class, 0);
+            if (_feeCandidates.size() == 2) {
+                event.put("EcalFeeCandidate", _feeCandidates, ReconstructedParticle.class, 0);
+            }
             skipEvent = false;
         }
         if (isWabCandidate) {
             _numberOfWabsSelected++;
-            event.put("EcalWabCandidate", _wabCandidates, ReconstructedParticle.class, 0);
+            if (_wabCandidates.size() == 2) {
+                event.put("EcalWabCandidate", _wabCandidates, ReconstructedParticle.class, 0);
+            }
             skipEvent = false;
         }
         if (isTridentCandidate) {
             _numberOfTridentsSelected++;
-            event.put("EcalTridentCandidate", _tridentCandidates, ReconstructedParticle.class, 0);
+            if (_tridentCandidates.size() == 3) {
+                event.put("EcalTridentCandidate", _tridentCandidates, ReconstructedParticle.class, 0);
+            }
             skipEvent = false;
         }
         if (skipEvent) {
@@ -250,8 +258,6 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
 
     private boolean isTridentCandidate(List<Cluster> ecalClusters) {
         boolean isTridentCandidate = false;
-        // let's start by requiring two and only two clusters, in opposite hemispheres,
-        // whose energies sum to the beam energy
         aida.tree().mkdirs("trident candidate analysis");
         aida.tree().cd("trident candidate analysis");
         aida.histogram1D("number of clusters", 10, -0.5, 9.5).fill(ecalClusters.size());
@@ -298,24 +304,41 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
                 }
                 // do we have three in-time clusters?
                 if (tridentClusters.size() == 3) {
+                    int nClustersInEvent = ecalClusters.size();
                     double esum = 0.;
-                    double pysum = 0.;
+                    double eysum = 0.;
                     //let's look at the kinematics.
+                    //make sure energy is reasonably balanced between top and bottom
                     for (Cluster c : tridentClusters) {
-                        aida.histogram1D("cluster energy", 100, 0., 5.).fill(c.getEnergy());
                         esum += c.getEnergy();
-                        pysum += c.getEnergy() * sinTheta(c.getPosition());
+                        eysum += c.getEnergy() * signum(c.getPosition()[1]);
                     }
-                    aida.histogram1D("trident esum", 100, 0., 5.).fill(esum);
-                    aida.histogram1D("trident pysum", 100, -1.0, 1.0).fill(pysum);
-                    if (esum > 0.5 && esum < 5. && abs(pysum) < 0.2) {
+                    aida.histogram1D("trident esum", 100, 0., 10.).fill(esum);
+                    aida.histogram1D("trident eysum", 100, -3.0, 3.0).fill(eysum);
+                    aida.histogram2D("esum vs eysum", 100, 0., 3., 100, -3.0, 3.0).fill(esum, eysum);
+                    aida.histogram1D("trident eysum " + nClustersInEvent + " clusters in event", 100, -3.0, 3.0).fill(eysum);
+
+                    if (esum > 1.5 && esum < 2.2 && abs(eysum) < 1.0) {
                         isTridentCandidate = true;
-                        // now find the ReconstructedParticles which are associated with these clusters
-                        for (ReconstructedParticle rp : _rpList) {
-                            if (!rp.getClusters().isEmpty()) {
-                                for (Cluster c : tridentClusters) {
-                                    if (rp.getClusters().get(0) == c) {
-                                        _tridentCandidates.add(rp);
+                        if (_requireFiducialTrident) {
+                            boolean allFiducial = true;
+                            for (Cluster c : tridentClusters) {
+                                if (!TriggerModule.inFiducialRegion(c)) {
+                                    allFiducial = false;
+                                }
+                            }
+                            if (!allFiducial) {
+                                isTridentCandidate = false;
+                            }
+                        }
+                        if (isTridentCandidate) {
+                            // now find the ReconstructedParticles which are associated with these clusters
+                            for (ReconstructedParticle rp : _rpList) {
+                                if (!rp.getClusters().isEmpty()) {
+                                    for (Cluster c : tridentClusters) {
+                                        if (rp.getClusters().get(0) == c) {
+                                            _tridentCandidates.add(rp);
+                                        }
                                     }
                                 }
                             }
@@ -358,6 +381,10 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
 
     public void setRequireFiducialWab(boolean b) {
         _requireFiducialWab = b;
+    }
+
+    public void setRequireFiducialTrident(boolean b) {
+        _requireFiducialTrident = b;
     }
 
     public void setSkimFee(boolean b) {
