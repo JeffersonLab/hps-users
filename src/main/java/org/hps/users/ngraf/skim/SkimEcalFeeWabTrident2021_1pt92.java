@@ -3,7 +3,8 @@ package org.hps.users.ngraf.skim;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
 import static java.lang.Math.abs;
-import static java.lang.Math.signum;
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
 import static java.lang.Math.sqrt;
 import java.util.ArrayList;
 import java.util.List;
@@ -306,19 +307,26 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
                 if (tridentClusters.size() == 3) {
                     int nClustersInEvent = ecalClusters.size();
                     double esum = 0.;
-                    double eysum = 0.;
                     //let's look at the kinematics.
-                    //make sure energy is reasonably balanced between top and bottom
+                    // recall that first cluster is positron candidate
+                    double[] positronMomentum = predictMomentum(tridentClusters.get(0), false);
+                    double[] electron1Momentum = predictMomentum(tridentClusters.get(1), true);
+                    double[] electron2Momentum = predictMomentum(tridentClusters.get(2), true);
+                    double[] psum = new double[3];
+                    for (int i = 0; i < 3; ++i) {
+                        psum[i] = positronMomentum[i] + electron1Momentum[i] + electron2Momentum[i];
+                    }
+                    double psumMag = sqrt(psum[0] * psum[0] + psum[1] * psum[1] + psum[2] * psum[2]);
+
                     for (Cluster c : tridentClusters) {
                         esum += c.getEnergy();
-                        eysum += c.getEnergy() * signum(c.getPosition()[1]);
                     }
                     aida.histogram1D("trident esum", 100, 0., 3.).fill(esum);
-                    aida.histogram1D("trident eysum", 100, -3.0, 3.0).fill(eysum);
-                    aida.histogram2D("esum vs eysum", 100, 0., 3., 100, -3.0, 3.0).fill(esum, eysum);
-                    aida.histogram1D("trident eysum " + nClustersInEvent + " clusters in event", 100, -3.0, 3.0).fill(eysum);
-
-                    if (esum > 1.5 && esum < 2.2 && abs(eysum) < 1.0) {
+                    aida.histogram1D("trident psumX", 100, -0.1, 0.1).fill(psum[0]);
+                    aida.histogram1D("trident psumY", 100, -0.1, 0.1).fill(psum[1]);
+                    aida.histogram1D("trident psumZ", 100, 0., 3.).fill(psum[2]);
+                    aida.histogram1D("trident psum", 100, 0., 3.).fill(psumMag);
+                    if (esum > 1.5 && esum < 2.2 && abs(psum[0]) < 0.1 && abs(psum[1]) < .01) {
                         isTridentCandidate = true;
                         if (_requireFiducialTrident) {
                             boolean allFiducial = true;
@@ -336,10 +344,10 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
                             aida.tree().cd("selected events");
                             // some diagnostics histograms...
                             aida.histogram1D("trident esum", 100, 0., 3.).fill(esum);
-                            aida.histogram1D("trident eysum", 100, -3.0, 3.0).fill(eysum);
-                            aida.histogram2D("esum vs eysum", 100, 0., 3., 100, -3.0, 3.0).fill(esum, eysum);
-                            aida.histogram1D("trident eysum " + nClustersInEvent + " clusters in event", 100, -3.0, 3.0).fill(eysum);
-
+                            aida.histogram1D("trident psumX", 100, -0.1, 0.1).fill(psum[0]);
+                            aida.histogram1D("trident psumY", 100, -0.1, 0.1).fill(psum[1]);
+                            aida.histogram1D("trident psumZ", 100, 0., 3.).fill(psum[2]);
+                            aida.histogram1D("trident psum", 100, 0., 3.).fill(psumMag);
                             int j = 0;
                             for (Cluster c : tridentClusters) {
                                 CalorimeterHit seed = c.getCalorimeterHits().get(0);
@@ -373,6 +381,23 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
 
     private double sinTheta(double[] p) {
         return p[1] / sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
+    }
+
+    private double[] predictMomentum(Cluster c, boolean isElectron) {
+        double x = c.getPosition()[0];
+        double y = c.getPosition()[1];
+        double e = c.getEnergy();
+        double theta = 0.0007 * y + 0.00036;
+        double phi;
+        if (isElectron) {
+            phi = 0.00071 * x + 0.00009942 * e + 0.0837 / e + 0.0002894;
+        } else {
+            phi = 0.00071 * x - 0.00005482 * e - 0.08383 / e + 0.0003058;
+        }
+        double px = e * sin(theta) * cos(phi);
+        double py = e * sin(theta) * sin(phi);
+        double pz = e * cos(theta);
+        return new double[]{px, py, pz};
     }
 
     @Override
