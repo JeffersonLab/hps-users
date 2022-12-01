@@ -326,7 +326,7 @@ public class SkimEcalFeeWabTrident2021_1pt92 extends Driver {
                     aida.histogram1D("trident psumY", 100, -0.1, 0.1).fill(psum[1]);
                     aida.histogram1D("trident psumZ", 100, 0., 3.).fill(psum[2]);
                     aida.histogram1D("trident psum", 100, 0., 3.).fill(psumMag);
-                    if (esum > 1.5 && esum < 2.2 && abs(psum[0]) < 0.1 && abs(psum[1]) < .01) {
+                    if (esum > 1.5 && esum < 2.2 && abs(psum[0]) < 0.04 && abs(psum[1]) < .01) {
                         isTridentCandidate = true;
                         if (_requireFiducialTrident) {
                             boolean allFiducial = true;
