@@ -16,7 +16,7 @@
     <repository>
       <id>lcsim-repo-public</id>
       <name>LCSim</name>
-      <url>http://srs.slac.stanford.edu/nexus/content/groups/lcsim-maven2-public/</url>
+      <url>https://srs.slac.stanford.edu/nexus/content/groups/lcsim-maven2-public/</url>
     </repository>
   </repositories>
   <dependencies>
